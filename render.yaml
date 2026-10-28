@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: jobmaxxing-linda
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    healthCheckPath: /api/session
+    envVars:
+      - key: JOBMAXXING_PUBLIC_DEMO
+        value: "1"

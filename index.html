@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7faff">
+  <meta name="description" content="JobMaxxing: a more personal way to find your next opportunity.">
+  <title>JobMaxxing · Find Your Next Move</title>
+  <link rel="stylesheet" href="style.css?v=20261028-jobmaxxing-1">
+  <script src="direction_matcher.js?v=20261023-direction-2" defer></script>
+  <script src="app.js?v=20261028-jobmaxxing-1" defer></script>
+</head>
+<body>
+  <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="match-job-face" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#5c9aff"/>
+        <stop offset=".52" stop-color="#2369df"/>
+        <stop offset="1" stop-color="#1746a7"/>
+      </linearGradient>
+      <linearGradient id="match-paper-face" x1=".1" y1="0" x2=".9" y2="1">
+        <stop offset="0" stop-color="#ffffff"/>
+        <stop offset=".63" stop-color="#f5f9ff"/>
+        <stop offset="1" stop-color="#dbeaff"/>
+      </linearGradient>
+      <linearGradient id="match-avatar" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#72b6ff"/>
+        <stop offset="1" stop-color="#2065ca"/>
+      </linearGradient>
+      <linearGradient id="match-seal" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#80ead9"/>
+        <stop offset=".52" stop-color="#29bfac"/>
+        <stop offset="1" stop-color="#119489"/>
+      </linearGradient>
+      <filter id="match-depth" x="-30%" y="-25%" width="170%" height="175%">
+        <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#123566" flood-opacity=".28"/>
+      </filter>
+      <filter id="match-floor"><feGaussianBlur stdDeviation="4"/></filter>
+    </defs>
+    <symbol id="resume-match-icon" viewBox="0 0 128 128">
+      <ellipse cx="64" cy="113" rx="37" ry="5" fill="#183f79" opacity=".18" filter="url(#match-floor)"/>
+      <g filter="url(#match-depth)">
+        <path d="M27 25h72a17 17 0 0 1 17 17v44a17 17 0 0 1-17 17H56l-24 16V103h-5a17 17 0 0 1-17-17V42a17 17 0 0 1 17-17Z" fill="url(#match-job-face)" stroke="#174daa" stroke-width="2"/>
+        <path d="M27 30h67" stroke="#c7e2ff" stroke-opacity=".55" stroke-width="2.5" stroke-linecap="round"/>
+        <text x="62" y="78" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Arial,sans-serif" font-size="44" font-weight="800" letter-spacing="-3" fill="#fff">AI</text>
+        <path d="m105 10 3.6 9.4 9.4 3.6-9.4 3.6-3.6 9.4-3.6-9.4-9.4-3.6 9.4-3.6Z" fill="#ffdc86" stroke="#f9c970" stroke-width="1.5"/>
+        <circle cx="19" cy="16" r="3" fill="#a9d9ff"/>
+      </g>
+    </symbol>
+  </svg>
+  <div id="loading-screen" class="loading-screen" role="status">Opening JobMaxxing…</div>
+
+  <dialog id="auth-screen" class="auth-screen" aria-label="Optional account">
+    <div class="auth-brand-panel">
+      <div class="brand brand-light"><span class="brand-symbol">J<span>✦</span></span><span>JobMaxxing</span></div>
+      <div class="auth-art" aria-hidden="true"><span class="art-ring ring-a"></span><span class="art-ring ring-b"></span><span class="art-center">✦</span><span class="art-chip chip-a">Beyond keywords</span><span class="art-chip chip-b">Find your direction ↗</span></div>
+      <div class="auth-story"><span class="overline">YOUR NEXT MOVE</span><h1>Your next opportunity<br>starts with a <span>conversation.</span></h1><p>Tell us what you enjoy and what you do well. Start your search by getting clear on what matters to you.</p><div class="auth-story-foot"><span>01&nbsp; Get to know you</span><span>02&nbsp; Find direction</span><span>03&nbsp; Explore roles</span></div></div>
+    </div>
+    <div class="auth-form-panel">
+      <button id="auth-close" class="auth-close" type="button">Continue without an account ×</button>
+      <div class="auth-top"><span class="auth-top-dot"></span><span>A space for your next move</span></div>
+      <div class="auth-form-wrap"><div class="form-kicker">WELCOME TO JOBMAXXING</div><h2 id="auth-title">Create your account</h2><p id="auth-subtitle">Keep your direction and saved jobs together in a personal career profile.</p>
+        <div class="auth-tabs" role="tablist" aria-label="Account options"><button id="register-tab" type="button" role="tab" aria-selected="true">Sign up</button><button id="login-tab" type="button" role="tab" aria-selected="false">Sign in</button></div>
+        <form id="auth-form" autocomplete="on"><label id="name-field">Your name<input id="auth-name" name="name" autocomplete="name" maxlength="80" placeholder="What should we call you?" required></label><label>Email<input id="auth-email" name="email" type="email" autocomplete="email" placeholder="name@example.com" required></label><label>Password<input id="auth-password" name="password" type="password" autocomplete="new-password" minlength="10" placeholder="At least 10 characters" required></label><p class="field-hint" id="password-hint">Use a password you do not use on other sites.</p><p id="auth-error" class="form-error" role="alert" hidden></p><button class="primary-button auth-submit" type="submit"><span id="auth-submit-label">Create my career profile</span><span aria-hidden="true">↗</span></button></form>
+        <p class="auth-privacy">An account is optional. Signing in adds guest progress and saved jobs to your account on this Mac. Cloud AI sends chat content to OpenAI when enabled; on-device AI stays here.</p>
+      </div>
+      <div class="auth-bottom">A better way to begin. <span>© 2026 JobMaxxing</span></div>
+    </div>
+  </dialog>
+
+  <section id="onboarding-screen" class="screen onboarding-screen" hidden aria-label="Career discovery conversation">
+    <header class="app-header"><div class="brand"><span class="brand-symbol">J<span>✦</span></span><span>JobMaxxing</span></div><div class="header-stage"><span class="header-line"></span><span id="chat-stage-label">CHAT · EXPLORE AT YOUR PACE</span></div><div class="onboarding-header-actions"><button class="guide-open" type="button" aria-label="How it works" title="How it works"><span class="guide-open-text">How it works</span><span class="guide-open-mark" aria-hidden="true">?</span></button><button id="finish-onboarding" class="primary-button header-continue" type="button">Browse jobs <span>→</span></button><button class="quiet-button logout-button" type="button">Sign in ↗</button></div></header>
+    <div class="onboarding-main">
+      <aside class="onboarding-side"><div class="side-top"><span id="chat-kicker" class="overline">FIRST, LET'S TALK</span><span class="side-orbit" aria-hidden="true">✦</span></div><h1 id="chat-side-title">Tell us<br><span>about you.</span></h1><p id="chat-side-description">There is no perfect answer. Tell us what kind of work you would like to explore.</p><div class="progress-block"><div class="progress-label"><span>Getting to know you</span><strong id="progress-count">0 / 4</strong></div><div class="progress-track"><span id="progress-bar"></span></div></div><div class="known-card"><div class="known-head"><span>Your direction so far</span><span>✦</span></div><dl><div><dt>Interests</dt><dd id="known-role">Still exploring</dd></div><div><dt>Experience</dt><dd id="known-skills">Still exploring</dd></div><div><dt>Location</dt><dd id="known-location">Still exploring</dd></div><div><dt>Priorities</dt><dd id="known-priorities">Still exploring</dd></div></dl><button id="edit-onboarding-profile" class="text-button" type="button">Edit your direction ↗</button></div></aside>
+      <aside id="chat-match-panel" class="chat-match-panel" aria-labelledby="chat-match-heading" hidden>
+        <div class="chat-match-head"><div><span class="overline">AS WE TALK</span><h2 id="chat-match-heading">Jobs that may fit</h2></div><span id="chat-match-count" class="chat-match-count"></span></div>
+        <p id="chat-match-status" class="chat-match-status" role="status"></p>
+        <div id="chat-match-criteria" class="chat-match-criteria" aria-label="Matching preferences"></div>
+        <div id="chat-match-list" class="chat-match-list" role="list" aria-label="Conversation job matches"></div>
+        <div class="chat-match-foot"><span>Current public postings · check requirements with the employer</span><button id="edit-chat-profile" class="text-button" type="button">Edit direction ↗</button></div>
+      </aside>
+      <div class="chat-workspace">
+        <section class="resume-match-card" aria-labelledby="resume-match-heading">
+          <div class="resume-match-copy"><span class="resume-match-kicker">PRIVATE · ON THIS DEVICE</span><h2 id="resume-match-heading">AI resume matching</h2><p id="resume-guidance">Drop a PDF, DOCX, or TXT (up to 5 MB). AI reads it on this Mac and matches current public jobs; your resume is not saved or sent to OpenAI.</p></div>
+          <label id="resume-dropzone" class="resume-dropzone" for="resume-file" tabindex="0" aria-describedby="resume-guidance"><input id="resume-file" class="sr-only" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"><span class="resume-drop-icon" aria-hidden="true">↑</span><span><strong>Drop a resume</strong><small>or choose a file</small></span></label>
+          <span id="resume-status" class="resume-status" role="status" aria-live="polite" hidden></span>
+          <button id="clear-resume" class="resume-clear" type="button" hidden>Remove</button>
+        </section>
+        <div class="chat-card">
+          <div class="chat-head"><svg class="match-icon assistant-avatar" aria-hidden="true" focusable="false"><use href="#resume-match-icon"/></svg><div><strong id="chat-guide-title">Your AI career guide</strong><small id="chat-mode">Connecting…</small></div><button id="chat-change-path" class="chat-change-path" type="button" hidden>Change path</button><div class="chat-presence"><span></span> <em id="chat-presence-label">In conversation</em></div></div>
+          <section class="chat-path-picker" aria-labelledby="chat-path-title"><span class="chat-path-kicker">START WHERE YOU ARE</span><h2 id="chat-path-title">Where would you like to start?</h2><p>There’s no wrong answer. Choose what feels easiest to talk about today.</p><div class="chat-path-actions"><button type="button" class="chat-path-button" data-chat-path="directed" aria-pressed="false"><strong>I have a direction</strong><span>Explore jobs I have in mind</span></button><button type="button" class="chat-path-button" data-chat-path="explore" aria-pressed="false"><strong>I'm still exploring</strong><span>Discover what interests me</span></button></div><button type="button" class="chat-path-cancel" hidden>Back to chat</button><p id="chat-path-error" class="inline-error" role="alert" hidden></p></section>
+          <div id="chat-messages" class="chat-messages" role="log" aria-live="polite"></div>
+          <div class="chat-bottom"><div id="chat-error" class="inline-error" role="alert" hidden></div><form id="chat-form" class="chat-composer"><label class="sr-only" for="chat-input">Your reply</label><textarea id="chat-input" rows="2" maxlength="1200" placeholder="Choose a path above to begin…" required disabled></textarea><button id="send-button" type="submit" aria-label="Send message" disabled>↗</button></form><div class="chat-job-actions"><span>See job matches after any answer, or browse now.</span><button id="view-chat-jobs" type="button">Browse jobs anytime →</button></div><div class="chat-bottom-line"><span>Enter to send · Shift + Enter for a new line</span><span id="ai-disclosure">Chat is saved locally</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="dashboard-screen" class="screen dashboard-screen" hidden aria-label="Job discovery app">
+    <aside class="dashboard-sidebar"><div class="brand"><span class="brand-symbol">J<span>✦</span></span><span>JobMaxxing</span></div><div id="sidebar-caption" class="sidebar-caption">AI career workspace</div><nav aria-label="Workspace navigation"><button class="side-nav active" data-view="discover" type="button"><span class="nav-icon">⌕</span>Discover jobs</button><button class="side-nav" data-view="saved" type="button"><span class="nav-icon">♡</span>Saved jobs</button><button class="side-nav" data-view="profile" type="button"><span class="nav-icon">◎</span><span id="profile-nav-label">My direction</span></button><button class="side-nav open-mini-chat" type="button" aria-controls="mini-chat" aria-expanded="false"><svg class="match-icon nav-match-icon" aria-hidden="true" focusable="false"><use href="#resume-match-icon"/></svg><span id="sidebar-chat-label">Chat with AI</span></button></nav><div class="sidebar-bottom"><div class="sidebar-feed"><span class="feed-dot"></span><div><strong>Job sources checked regularly</strong><small>Confirm details with the employer</small></div></div><button class="sidebar-logout logout-button" type="button">Sign in <span>↗</span></button></div></aside>
+    <div class="dashboard-main"><header class="dashboard-top"><div class="dashboard-breadcrumb">Workspace <span>/</span> <strong id="breadcrumb-view">Discover jobs</strong></div><button class="guide-open" type="button" aria-label="How it works" title="How it works"><span class="guide-open-text">How it works</span><span class="guide-open-mark" aria-hidden="true">?</span></button><div class="account-chip"><span id="account-initial">J</span><span id="account-name">My account</span></div><button class="dashboard-account-action logout-button" type="button">Sign in ↗</button></header>
+      <div id="discover-view" class="dashboard-view">
+        <div class="dash-intro"><div><div id="discover-eyebrow" class="eyebrow-blue">JOB MATCHING</div><h1 id="dashboard-greeting">Find your fit.</h1><p id="discover-description">Chat or add a resume. Explore current public jobs.</p></div><div class="dash-intro-art" aria-hidden="true"><span>✦</span><i></i><i></i></div></div>
+        <div id="chat-browse-banner" class="chat-browse-banner" hidden><span id="chat-browse-summary">Showing jobs based on your conversation</span><button id="clear-chat-browse" type="button">Show all jobs</button></div>
+        <div class="results-toolbar"><div class="toolbar-left"><label class="search-box"><span>⌕</span><input id="job-search" type="search" placeholder="Role, employer, or city" aria-label="Search jobs by role, employer, or city"></label><button id="open-job-filters" class="outline-button filter-button" type="button">Filters <span id="filter-count" aria-hidden="true"></span></button></div><button id="refresh-jobs" class="outline-button" type="button" aria-label="Refresh jobs"><span class="refresh-icon" aria-hidden="true">↻</span><span class="refresh-label">Refresh jobs</span></button></div>
+        <div class="job-category-bar"><strong>Browse by job type</strong><div id="job-categories" class="job-categories" role="group" aria-label="Job type categories"></div></div>
+        <div id="internship-years" class="internship-years" hidden><strong>Possible internships by year in school</strong><div id="year-categories" class="job-categories" role="group" aria-label="Internship student-year categories"></div><p id="year-guidance">Only employer-stated years are marked. Listings without a stated year remain available; check the posting before applying.</p></div>
+        <div class="results-meta"><span id="results-count" tabindex="-1">Finding jobs…</span><span id="source-status">Connecting to job sources…</span></div>
+        <p id="salary-filter-status" class="salary-filter-status" role="status" hidden></p>
+        <div id="job-cards" class="job-list" role="list" aria-label="Job results"></div>
+        <div class="results-footer"><p>Public employer boards refresh every 15 min; Remotive remote jobs every 6 hours and may be posted a day later. Verify before applying.</p><div class="external-job-links"><a id="linkedin-search" href="https://www.linkedin.com/jobs/" target="_blank" rel="noopener noreferrer">Recent jobs on LinkedIn ↗</a><a href="https://app.joinhandshake.com/stu/jobs" target="_blank" rel="noopener noreferrer">Campus jobs on Handshake ↗</a></div></div>
+      </div>
+      <div id="saved-view" class="dashboard-view" hidden><div class="view-title"><div class="eyebrow-blue">BOOKMARKS / SAVED</div><h1>Opportunities worth keeping.</h1><p>All the roles you want to revisit, in one place.</p></div><div id="saved-cards" class="job-list" role="list" aria-label="Saved jobs"></div><div class="results-footer"><p id="saved-status">Listings can change. Check the original posting for current details.</p></div></div>
+      <div id="profile-view" class="dashboard-view" hidden>
+        <div class="view-title"><div class="eyebrow-blue" id="profile-page-eyebrow">YOUR DIRECTION</div><h1 id="profile-page-title">Where do you want to go?</h1><p id="profile-page-subtitle">Explore what you enjoy, set the conditions that matter, and compare current jobs.</p><button id="jump-direction" class="member-link-button" type="button">Refine my matches ↓</button></div>
+        <section id="member-profile" class="member-profile" aria-label="Personal career profile" hidden>
+          <div class="member-hero">
+            <div class="member-identity"><span id="member-avatar" class="member-avatar" aria-hidden="true">G</span><div><span class="member-kicker">YOUR ACCOUNT PROFILE</span><h2 id="member-name">Your career profile</h2><p id="member-email"></p></div></div>
+            <div class="member-completion"><span>Direction details</span><strong id="member-progress-label">0 of 4 complete</strong><div class="member-progress-track" aria-hidden="true"><span id="member-progress-fill"></span></div></div>
+          </div>
+          <dl class="member-stats"><div><dt>Saved jobs</dt><dd id="member-saved-count">0</dd></div><div><dt>Recent chat replies</dt><dd id="member-chat-count">0</dd></div><div><dt>Suggested leads</dt><dd id="member-leads-count">—</dd></div></dl>
+          <div class="member-analysis-grid">
+            <section class="member-analysis-card member-overview"><span class="member-card-kicker">PROFILE SNAPSHOT</span><h3>Your direction so far</h3><p id="member-overview-text" class="member-analysis-copy"></p><dl class="member-profile-facts"><div><dt>Interests</dt><dd id="member-role"></dd></div><div><dt>Skills & experience</dt><dd id="member-skills"></dd></div><div><dt>Location</dt><dd id="member-location"></dd></div><div><dt>Priorities</dt><dd id="member-priorities"></dd></div></dl><div class="member-direction-summary"><strong>Matching choices</strong><div id="member-direction-tags" class="member-direction-tags"></div></div></section>
+            <section class="member-analysis-card"><span class="member-card-kicker">WHAT YOU KEEP</span><h3>Patterns in saved jobs</h3><p id="member-saved-insight" class="member-analysis-copy"></p><ul id="member-saved-patterns" class="member-insight-list"></ul><button id="member-open-saved" class="member-link-button" type="button">See saved jobs →</button></section>
+            <section class="member-analysis-card"><span class="member-card-kicker">CURRENT OPENINGS</span><h3>Roles worth reviewing</h3><p id="member-leads-insight" class="member-analysis-copy"></p><ul id="member-leads-list" class="member-leads-list"></ul><button id="member-open-jobs" class="member-link-button" type="button">Browse current jobs →</button></section>
+            <section class="member-analysis-card member-next"><div class="member-next-copy"><span class="member-card-kicker">YOUR NEXT MOVE</span><h3>Make this profile more useful</h3><p id="member-next-text" class="member-analysis-copy"></p></div><button id="member-next-action" class="outline-button" type="button">Edit your direction →</button></section>
+          </div>
+          <p class="member-disclaimer">This summary uses your saved direction and current public job postings. It is a starting point, not an eligibility or hiring prediction. Check each employer posting before applying.</p>
+        </section>
+        <div id="profile-edit-heading" class="profile-edit-heading" hidden><span class="eyebrow-blue">KEEP IT CURRENT</span><h2>Edit your direction</h2><p>Changes here update your account profile and job suggestions.</p></div>
+        <form id="profile-form" class="profile-form direction-form">
+          <div class="direction-form-intro"><span class="member-card-kicker">EXPLORE YOUR FIT</span><h3>Start with what you enjoy.</h3><p>Choose as much or as little as you know. Your matches update from current postings as you refine these choices.</p></div>
+          <fieldset class="direction-activities"><legend>What would you like to do?</legend><div class="direction-activity-grid">
+            <label><input type="checkbox" name="activities" value="build"><span>Build products or code</span></label>
+            <label><input type="checkbox" name="activities" value="design"><span>Design experiences</span></label>
+            <label><input type="checkbox" name="activities" value="research"><span>Understand people</span></label>
+            <label><input type="checkbox" name="activities" value="analyze"><span>Analyze data</span></label>
+            <label><input type="checkbox" name="activities" value="teach"><span>Teach or help others</span></label>
+            <label><input type="checkbox" name="activities" value="grow"><span>Grow an audience</span></label>
+            <label><input type="checkbox" name="activities" value="organize"><span>Plan and organize</span></label>
+          </div></fieldset>
+          <div class="direction-section-title"><strong>Your experience and goals</strong><span>Optional, but helpful for a closer match</span></div>
+          <div class="profile-form-grid"><label>Roles or fields of interest<input name="role" maxlength="260" placeholder="e.g. education technology, product design"></label><label>Skills, courses, or projects<input name="skills" maxlength="260" placeholder="e.g. Python, user research"></label><label>Preferred city, state, or country<input name="location" maxlength="260" placeholder="e.g. Chicago, Illinois, or remote"></label><label>What matters most<input name="priorities" maxlength="260" placeholder="e.g. mentorship, meaningful work"></label></div>
+          <div class="direction-section-title"><strong>Practical preferences</strong><span>Unknown details stay visible but are clearly flagged</span></div>
+          <div class="profile-form-grid direction-select-grid">
+            <label>Job type<select name="job_type"><option value="">Any job type</option><option>Internship</option><option>Full-time</option><option>Part-time</option><option>Fellowship</option><option>Contract</option></select></label>
+            <label>Year in school<select name="school_year"><option value="">Any year / not applicable</option><option value="freshman">Freshman</option><option value="sophomore">Sophomore</option><option value="junior">Junior</option><option value="senior">Senior</option></select></label>
+            <label>Work setup<select name="workplace"><option value="">Any setup</option><option>Remote</option><option>Hybrid</option><option>On-site</option></select></label>
+            <label>Location preference<select name="location_rule"><option value="prefer">Prefer this location</option><option value="only">Only this location</option><option value="any">Anywhere</option></select></label>
+            <label>Minimum expected pay (USD)<input name="salary_min" type="number" min="0" max="10000000" step="0.01" inputmode="decimal" placeholder="Optional"></label>
+            <label>Pay period<select name="salary_period"><option value="year">Per year</option><option value="hour">Per hour</option></select></label>
+          </div>
+          <p class="direction-form-note">A pay target uses the upper end of a published USD range. Unlisted pay and student-year eligibility are never assumed; always check the employer posting.</p>
+          <div class="profile-actions"><p id="profile-feedback" role="status"></p><button class="primary-button" type="submit">Save my direction <span>→</span></button></div>
+        </form>
+        <section id="direction-preview" class="direction-preview" aria-labelledby="direction-preview-title"><div class="direction-preview-head"><div><span class="member-card-kicker">CURRENT POSSIBILITIES</span><h2 id="direction-preview-title">Jobs worth exploring</h2><p id="direction-preview-status" role="status">Checking current postings…</p></div><button id="direction-browse" class="outline-button" type="button" hidden>See all matches →</button></div><div id="direction-preview-list" class="direction-preview-list" role="list" aria-label="Jobs matching your direction"></div><p class="direction-preview-foot">These are possible connections, not eligibility or hiring predictions. Missing pay, work setup, and school-year details require verification.</p></section>
+        <button id="return-to-chat" class="outline-button return-chat" type="button">Continue the conversation ↗</button>
+      </div>
+    </div>
+    <button class="dashboard-chat-action open-mini-chat" type="button" title="Open your career conversation" aria-controls="mini-chat" aria-expanded="false"><svg class="match-icon" aria-hidden="true" focusable="false"><use href="#resume-match-icon"/></svg><span id="dashboard-chat-label" class="sr-only">Chat with AI</span></button>
+    <section id="mini-chat" class="mini-chat" aria-labelledby="mini-chat-title" hidden>
+      <div class="mini-chat-head"><svg class="match-icon mini-chat-avatar" aria-hidden="true" focusable="false"><use href="#resume-match-icon"/></svg><div class="mini-chat-heading"><strong id="mini-chat-title">Chat with AI</strong><small id="mini-chat-mode">Connecting…</small></div><button id="mini-chat-change-path" class="mini-chat-head-button" type="button" hidden>Change path</button><button id="mini-chat-expand" class="mini-chat-head-button" type="button" title="Open full conversation">Full chat ↗</button><button id="mini-chat-close" class="mini-chat-head-button mini-chat-close" type="button" aria-label="Close chat">×</button></div>
+      <section class="chat-path-picker mini-path-picker" aria-labelledby="mini-chat-path-title"><h2 id="mini-chat-path-title">Where would you like to start?</h2><p>Choose what feels easiest to talk about today.</p><div class="chat-path-actions"><button type="button" class="chat-path-button" data-chat-path="directed" aria-pressed="false"><strong>I have a direction</strong></button><button type="button" class="chat-path-button" data-chat-path="explore" aria-pressed="false"><strong>I'm still exploring</strong></button></div><button type="button" class="chat-path-cancel" hidden>Back to chat</button><p id="mini-chat-path-error" class="inline-error" role="alert" hidden></p></section>
+      <div id="mini-chat-messages" class="mini-chat-messages" role="log" aria-live="polite" aria-label="Career conversation"></div>
+      <section class="mini-chat-matches" aria-labelledby="mini-chat-matches-title"><div class="mini-chat-matches-head"><strong id="mini-chat-matches-title">Jobs that may fit</strong><span id="mini-chat-match-count"></span></div><p id="mini-chat-match-status" role="status"></p><div id="mini-chat-match-list" class="mini-chat-match-list" role="list" aria-label="Preview of matching jobs"></div><button id="mini-chat-view-jobs" type="button">Browse jobs →</button></section>
+      <div class="mini-chat-bottom"><div id="mini-chat-error" class="inline-error" role="alert" hidden></div><form id="mini-chat-form" class="chat-composer"><label class="sr-only" for="mini-chat-input">Your reply</label><textarea id="mini-chat-input" rows="2" maxlength="1200" placeholder="What kind of job are you looking for?" required></textarea><button id="mini-chat-send" type="submit" aria-label="Send message">↗</button></form><span id="mini-chat-disclosure">Chat is saved locally</span></div>
+    </section>
+    <nav class="mobile-nav" aria-label="Mobile workspace navigation"><button data-view="discover" type="button">⌕<span>Discover</span></button><button data-view="saved" type="button">♡<span>Saved</span></button><button data-view="profile" type="button">◎<span>Profile</span></button></nav>
+  </section>
+
+  <dialog id="site-guide" class="site-guide" aria-labelledby="guide-title" aria-describedby="guide-description">
+    <div id="guide-spotlight" class="guide-spotlight" aria-hidden="true"></div>
+    <div class="site-guide-card">
+      <span class="guide-pointer" aria-hidden="true"></span>
+      <div class="site-guide-top"><span class="site-guide-kicker">JOB MATCHING GUIDE</span><button id="guide-skip" class="guide-skip" type="button">Skip</button></div>
+      <div class="guide-copy"><p id="guide-step-label" class="guide-step-label">Step 1 of 4</p><h2 id="guide-title" tabindex="-1">AI chat</h2><p id="guide-description">This AI bubble opens a career conversation. If AI is offline, a guided chat is still available.</p></div>
+      <div class="guide-dots" aria-hidden="true"><span class="active"></span><span></span><span></span><span></span></div>
+      <div class="guide-actions"><button id="guide-back" type="button" hidden>Back</button><button id="guide-next" class="primary-button" type="button">Next →</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="profile-dialog" class="profile-dialog"><form method="dialog"><div class="dialog-head"><h2>Edit your direction</h2><button value="cancel" aria-label="Close">×</button></div></form><form id="dialog-profile-form"><label>Roles of interest<input name="role" maxlength="260"></label><label>Skills and experience<input name="skills" maxlength="260"></label><label>Location preference<input name="location" maxlength="260"></label><label>Top priorities<input name="priorities" maxlength="260"></label><div class="dialog-actions"><button id="close-profile-dialog" class="outline-button" type="button">Cancel</button><button class="primary-button" type="submit">Save changes →</button></div></form></dialog>
+  <dialog id="save-choice-dialog" class="profile-dialog save-choice-dialog" aria-label="Choose how to save this job"><div class="dialog-head"><h2>Save this job</h2><button id="close-save-choice" type="button" aria-label="Close">×</button></div><p>No account is needed. Save on this device, or sign in to keep jobs with your account.</p><p class="guest-privacy">Jobs saved as a guest stay in this browser and can be lost if its data is cleared.</p><p id="save-choice-error" class="form-error" role="alert" hidden></p><div class="save-choice-actions"><button id="save-on-device" class="primary-button" type="button">Save on this device →</button><button id="save-with-account" class="outline-button" type="button">Sign in or create account</button></div></dialog>
+  <dialog id="job-filters-dialog" class="profile-dialog filters-dialog" aria-label="Filter job results">
+    <form method="dialog"><div class="dialog-head"><h2>Filter jobs</h2><button value="cancel" aria-label="Close">×</button></div></form>
+    <form id="job-filters-form">
+      <label>Job type<select id="job-type"><option value="">All types</option><option value="Internship">Internship</option><option value="Full-time">Full-time</option><option value="Part-time">Part-time</option><option value="Fellowship">Fellowship</option><option value="Contract">Contract</option><option value="Other">Other / not listed</option></select></label>
+      <label for="job-location-filter">Location<select id="job-location-filter"><option value="">Anywhere</option><option value="remote">Remote</option><option value="country:US">United States · any state</option><optgroup id="us-state-options" label="United States · states"></optgroup><option value="other-country">Other country…</option></select></label>
+      <label id="country-filter-wrap" for="job-country-filter" hidden>Country<select id="job-country-filter"><option value="">Choose a country</option></select></label>
+      <p class="location-filter-hint">A state or country matches when the listing names it. Remote uses the listing’s work setup.</p>
+      <label>Workplace<select id="job-workplace"><option value="">Any workplace</option><option value="Remote">Remote</option><option value="Hybrid">Hybrid</option><option value="On-site">On-site</option></select></label>
+      <div class="salary-filter-group">
+        <strong>Expected salary</strong>
+        <div class="salary-filter-fields">
+          <label for="job-min-salary">At least (USD)<input id="job-min-salary" type="number" min="1" max="10000000" step="any" inputmode="decimal" placeholder="e.g. 25 or 60000"></label>
+          <label for="job-salary-period">Pay period<select id="job-salary-period"><option value="year">Per year</option><option value="hour">Per hour</option></select></label>
+        </div>
+        <p class="salary-filter-hint">A published range matches if its upper end reaches your target. Jobs without a comparable USD rate are hidden while this filter is on; an offer is not guaranteed.</p>
+      </div>
+      <label>Sort by<select id="job-sort"><option value="relevance">Best connection</option><option value="newest">Newest within each section</option></select></label>
+      <label class="filter-check"><input id="early-filter" type="checkbox">Internships and clearly labeled early-career roles only</label>
+      <div class="dialog-actions"><button id="clear-job-filters" class="outline-button" type="button">Clear filters</button><button class="primary-button" type="submit">Show jobs →</button></div>
+    </form>
+  </dialog>
+</body>
+</html>
