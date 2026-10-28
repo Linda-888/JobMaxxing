@@ -86,6 +86,7 @@ class LocalFlowTest(unittest.TestCase):
         self.assertIn('id="discover-eyebrow" class="eyebrow-blue">JOB MATCHING', html)
         self.assertIn('id="dashboard-greeting">Find your fit.', html)
         self.assertIn('font-weight="800" letter-spacing="-3" fill="#fff">AI</text>', html)
+        self.assertIn('id="guided-chat-icon"', html)
         self.assertIn('id="resume-match-heading">AI resume matching', html)
         self.assertIn('id="chat-guide-title">Your AI career guide', html)
         self.assertIn('current public jobs', html)

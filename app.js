@@ -240,6 +240,7 @@ function persistGuest() { localStorage.setItem(guestKey, JSON.stringify(guestPay
 
 function updateIdentity() {
   const name = state.user?.name || 'Guest';
+  $$('svg.match-icon use').forEach(icon => icon.setAttribute('href', state.ai ? '#resume-match-icon' : '#guided-chat-icon'));
   $('#account-name').textContent = name;
   $('#account-initial').textContent = name.slice(0, 1).toUpperCase();
   $('#discover-eyebrow').textContent = 'JOB MATCHING';
