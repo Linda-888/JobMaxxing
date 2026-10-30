@@ -1806,7 +1806,7 @@ class Handler(SimpleHTTPRequestHandler):
             except RuntimeError as exc:
                 return self.send_json(503, {"error": str(exc)})
             except (HTTPError, URLError, TimeoutError, OSError, zipfile.BadZipFile):
-                return self.send_json(503, {"error": "Local resume matching is temporarily unavailable. Your resume was not sent to another service."})
+                return self.send_json(503, {"error": "Local Resume Maxxing is temporarily unavailable. Your resume was not sent to another service."})
         try:
             data = self.read_json(128000 if route == "/api/guest/import" else 32000)
             if route == "/api/auth/register":

@@ -461,24 +461,9 @@ body.public-demo .logout-button,body.public-demo .account-chip{display:none!impo
   .guide-copy>p:last-child{font-size:12px}
 }
 
-/* Resume matching is a first-class path, whether someone starts on the dashboard or in chat. */
-.side-nav-resume{height:49px;border:1px solid #c8ddfa;background:#f1f7ff;color:#175fc4;font-weight:800}
-.side-nav-resume:hover:not(.active){background:#e7f1ff;border-color:#9ec4f7}
-.side-nav-resume.active{border-color:#9ec4f7;background:#e5f0ff}
-.side-nav-resume .nav-icon{font-size:25px;font-weight:750}
-.onboarding-resume-entry{display:flex;align-items:center;gap:11px;width:100%;min-height:46px;margin-top:20px;padding:9px 13px;border:1px solid #a9c8f5;border-radius:11px;background:#fff;color:#155bc1;font-size:12px;font-weight:800;text-align:left;box-shadow:0 7px 18px rgba(25,82,160,.08)}
-.onboarding-resume-entry span{font-size:21px;line-height:1}
-.onboarding-resume-entry small{margin-left:auto;font-size:18px}
-.onboarding-resume-entry:hover{background:#eef6ff}
-.discover-resume-entry{display:flex;align-items:center;gap:14px;width:100%;margin:2px 0 16px;padding:15px 18px;border:1px solid #a9c9f5;border-radius:15px;background:linear-gradient(110deg,#eaf3ff,#f9fcff);color:#204b85;text-align:left;box-shadow:0 10px 25px rgba(25,75,150,.06)}
-.discover-resume-entry:hover{border-color:#6eaaef;background:#e1efff}
-.discover-resume-entry>span:nth-child(2){flex:1;min-width:0}
-.discover-resume-entry strong,.discover-resume-entry small{display:block}
-.discover-resume-entry strong{font-size:15px;line-height:1.3;color:#1659b9}
-.discover-resume-entry small{margin-top:3px;color:#55749d;font-size:11px;line-height:1.35}
-.discover-resume-icon{display:grid;place-items:center;width:39px;height:39px;flex:0 0 39px;border-radius:11px;background:#d8eaff;color:#1663c7;font-size:27px;font-weight:800}
-.discover-resume-arrow{font-size:23px;color:#1663c7}
-.discover-resume-entry:focus-visible,.onboarding-resume-entry:focus-visible,.side-nav-resume:focus-visible{outline:3px solid #80b2f5;outline-offset:2px}
+/* Keep Resume Maxxing visually level with the other sidebar destinations. */
+.nav-resume-icon{width:24px;height:24px;flex:0 0 24px}
+.side-nav-resume:focus-visible{outline:3px solid #80b2f5;outline-offset:2px}
 
 .resume-match-card{grid-template-columns:minmax(0,1fr) minmax(220px,43%);gap:10px 16px;padding:15px 18px;border-color:#bed7fa;background:linear-gradient(110deg,#fff,#f5f9ff);box-shadow:0 10px 28px rgba(31,91,171,.08)}
 .resume-match-kicker{font-size:9px}
@@ -533,14 +518,7 @@ body.public-demo .logout-button,body.public-demo .account-chip{display:none!impo
   .resume-view-card{grid-template-columns:1fr}
 }
 @media(max-width:650px){
-  .onboarding-resume-entry{min-height:38px;margin-top:8px;padding:6px 10px;font-size:11px}
-  .onboarding-resume-entry span{font-size:18px}
-  .discover-resume-entry{gap:9px;margin:2px 0 12px;padding:11px 12px;border-radius:12px}
-  .discover-resume-icon{width:34px;height:34px;flex-basis:34px;font-size:23px}
-  .discover-resume-entry strong{font-size:13px}
-  .discover-resume-entry small{font-size:10px}
-  .mobile-nav button[data-view="resume"]{background:transparent;color:#1765c6;font-weight:800}
-  .mobile-nav button[data-view="resume"].active{background:#e3efff}
+  .mobile-nav .nav-resume-icon{width:21px;height:21px;flex-basis:21px}
   .resume-match-card{grid-template-columns:1fr;gap:7px;padding:10px 11px}
   .resume-match-copy{grid-column:1}
   .resume-match-copy h2{font-size:14px;margin:2px 0}

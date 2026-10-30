@@ -8,8 +8,10 @@ const legacyGuideSeenKey = 'resumemaxxing-site-guide-v1';
 const guideSteps = [
   { title: 'AI chat', description: 'This AI bubble opens a career conversation. If AI is offline, a guided chat is still available.',
     screen: 'dashboard', view: 'discover', target: () => $('.dashboard-chat-action'), placement: ['top', 'left', 'right', 'bottom'] },
-  { title: 'Resume matching', description: 'Open this page to upload a PDF, DOCX, or TXT and see jobs related to your experience. You do not need to start a chat.',
-    screen: 'dashboard', view: 'resume', target: () => $('#dashboard-resume-dropzone'), placement: ['bottom', 'top', 'right', 'left'] },
+  { title: 'Resume Maxxing', description: 'Open Resume Maxxing to upload a PDF, DOCX, or TXT and see jobs related to your experience. You do not need to start a chat.',
+    screen: 'dashboard', view: 'discover', target: () => window.matchMedia('(max-width: 650px)').matches ?
+      $('.mobile-nav button[data-view="resume"]') : $('.side-nav[data-view="resume"]'),
+    placement: ['right', 'top', 'bottom', 'left'] },
   { title: 'Search and filter', description: 'Search for a role, employer, or city. Use Filters to narrow the jobs you see.',
     screen: 'dashboard', view: 'discover', target: () => $('.toolbar-left'), placement: ['bottom', 'right', 'left', 'top'] },
   { title: 'Saved jobs', description: 'Open Saved to revisit jobs you kept. Check each employer posting before applying.',
@@ -89,7 +91,7 @@ function renderGuide() {
   $('#guide-description').textContent = state.publicDemo && guideStep === 0 ?
     'This bubble opens a guided career conversation. Tell us what interests you to see possible jobs.' :
     state.publicDemo && guideStep === 1 ?
-      'Drop or choose a resume here for keyword-based job suggestions. The file is read temporarily and not saved; chat is optional.' : step.description;
+      'Open Resume Maxxing here to upload a PDF, DOCX, or TXT. The file is read temporarily for keyword suggestions, then discarded; chat is optional.' : step.description;
   $$('.guide-dots span').forEach((dot, index) => dot.classList.toggle('active', index === guideStep));
   $('#guide-back').hidden = guideStep === 0;
   $('#guide-next').textContent = guideStep === guideSteps.length - 1 ? 'Finish' : 'Next →';
@@ -130,7 +132,7 @@ function positionGuide() {
     left: rect.left - gap - margin,
     right: viewportWidth - rect.right - gap - margin
   };
-  const preferred = window.matchMedia('(max-width: 650px)').matches && guideStep === 3 ?
+  const preferred = window.matchMedia('(max-width: 650px)').matches && [1, 3].includes(guideStep) ?
     ['top', 'bottom', 'right', 'left'] : step.placement;
   const fits = side => space[side] >= (side === 'top' || side === 'bottom' ? height : width);
   const side = preferred.find(fits) || [...preferred].sort((a, b) =>
@@ -250,7 +252,7 @@ function updateIdentity() {
   $$('.logout-button').forEach(button => { button.textContent = state.user ? 'Sign out ↗' : 'Sign in ↗'; });
   if (state.publicDemo) {
     $('.resume-match-kicker').textContent = 'GUEST DEMO · NOT STORED';
-    $('#resume-match-heading').textContent = 'Resume matching';
+    $('#resume-match-heading').textContent = 'Resume Maxxing';
     $('#resume-guidance').textContent = 'Add a PDF, DOCX, or TXT (up to 5 MB). We read it briefly on this website’s server for keyword suggestions, then discard it. No AI reads your file.';
     $('#dashboard-resume-kicker').textContent = 'GUEST DEMO · NOT STORED';
     $('#dashboard-resume-heading').textContent = 'Find jobs from your resume';
@@ -265,8 +267,8 @@ function updateIdentity() {
   $('#chat-mode').textContent = chatMode;
   $('#mini-chat-mode').textContent = chatMode;
   $('#discover-description').textContent = state.publicDemo ?
-    'Chat or add a resume, then explore current public jobs.' : state.ai ?
-    (local ? 'Chat or add a resume. Explore current public jobs.' : 'Chat with AI or add a resume. Explore current public jobs.') :
+    'Explore current public jobs, or use Career chat and Resume Maxxing.' : state.ai ?
+    'Explore current public jobs, or use AI chat and Resume Maxxing.' :
     'Browse public jobs with guided chat. AI is unavailable.';
   const chatLabel = state.ai ? 'Chat with AI' : 'Career chat';
   $('#dashboard-chat-label').textContent = chatLabel;
@@ -912,7 +914,7 @@ function setView(view) {
   state.view = view;
   for (const name of ['discover', 'resume', 'saved', 'profile']) $(`#${name}-view`).hidden = name !== view;
   $$('.side-nav,.mobile-nav button').forEach(button => button.classList.toggle('active', button.dataset.view === view));
-  $('#breadcrumb-view').textContent = { discover: 'Discover jobs', resume: 'Resume matching', saved: 'Saved jobs',
+  $('#breadcrumb-view').textContent = { discover: 'Discover jobs', resume: 'Resume Maxxing', saved: 'Saved jobs',
     profile: state.user ? 'My career profile' : 'My direction' }[view];
   if (view === 'saved') renderSaved();
   if (view === 'resume') renderResumeResults();
@@ -920,18 +922,6 @@ function setView(view) {
   window.scrollTo(0, 0);
 }
 $$('[data-view]').forEach(button => button.addEventListener('click', () => setView(button.dataset.view)));
-function openResumeView() {
-  closeMiniChat(false);
-  if (!state.user && state.guestStage !== 'discover') {
-    state.guestStage = 'discover';
-    state.hasDiscovered = true;
-    try { persistGuest(); } catch (_) { /* Upload still works when storage is unavailable. */ }
-  }
-  enterDashboard('resume');
-  $('#dashboard-resume-dropzone').focus({ preventScroll: true });
-}
-$('#discover-open-resume').addEventListener('click', openResumeView);
-$('#onboarding-open-resume').addEventListener('click', openResumeView);
 let miniChatOpener = null;
 function closeMiniChat(restoreFocus = true) {
   const panel = $('#mini-chat');
@@ -1065,11 +1055,11 @@ function renderResumeResults() {
     return;
   }
   if (state.resumeStatus === 'error') {
-    status.textContent = state.resumeError || 'Resume matching could not be completed.';
+    status.textContent = state.resumeError || 'Could not match this resume.';
     return;
   }
   if (jobsLoading || (!state.checkedAt && !state.jobError)) {
-    status.textContent = 'Resume matching finished. Checking the current job list…';
+    status.textContent = 'Resume checked. Checking the current job list…';
     return;
   }
   if (state.jobError) {
@@ -1172,12 +1162,12 @@ async function uploadResume(file) {
       });
     } catch (error) {
       if (error.name === 'AbortError') return;
-      throw new Error(state.publicDemo ? 'Could not reach resume matching. Please try again later.' :
-        'Could not reach local resume matching. Your resume was not sent to another service.');
+      throw new Error(state.publicDemo ? 'Could not reach Resume Maxxing. Please try again later.' :
+        'Could not reach local Resume Maxxing. Your resume was not sent to another service.');
     }
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error || (state.publicDemo ? 'Resume matching could not be completed.' :
-      'Local resume matching could not be completed.'));
+    if (!response.ok) throw new Error(result.error || (state.publicDemo ? 'Could not match this resume.' :
+      'Could not match this resume locally.'));
     if (request !== state.resumeRequest) return;
     state.resumeMatches = Array.isArray(result.matches) ? result.matches : [];
     state.resumeSignals = result.signals && typeof result.signals === 'object' ? {
@@ -1807,15 +1797,15 @@ function renderChatMatches() {
       return;
     }
     if (state.resumeStatus === 'error') {
-      $('#chat-match-status').textContent = state.resumeError || 'Resume matching could not be completed.';
+      $('#chat-match-status').textContent = state.resumeError || 'Could not match this resume.';
       return;
     }
     if (jobsLoading || (!state.checkedAt && !state.jobError)) {
-      $('#chat-match-status').textContent = 'Resume matching finished; checking the current job list…';
+      $('#chat-match-status').textContent = 'Resume checked; checking the current job list…';
       return;
     }
     if (state.jobError) {
-      $('#chat-match-status').textContent = 'The current job list could not be verified. Resume matching did not create or save any listings.';
+      $('#chat-match-status').textContent = 'The current job list could not be verified. We did not create or save any listings.';
       return;
     }
     const matches = currentResumeMatches();
