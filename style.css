@@ -329,8 +329,8 @@ body{height:auto;min-height:100dvh;overflow:visible}
 .match-icon{display:block;width:40px;height:40px;flex:0 0 auto;object-fit:contain}
 .chat-head .assistant-avatar{width:43px;height:43px;background:transparent;border-radius:0}
 .nav-match-icon{width:30px;height:30px;margin-left:-3px}
-.side-nav.open-mini-chat{margin-top:8px}
-.side-nav.open-mini-chat.is-open{background:#eaf2ff;color:var(--blue)}
+.side-nav-chat{margin-top:8px}
+.side-nav-chat.active{background:#eaf2ff;color:var(--blue)}
 .dashboard-chat-action{position:fixed;display:inline-flex;align-items:center;justify-content:center;right:18px;bottom:16px;width:88px;height:92px;min-height:92px;padding:0;border:0;border-radius:20px;gap:0;z-index:46;background:transparent;color:var(--blue);box-shadow:none;overflow:visible;transform-origin:50% 86%;transition:transform .18s}
 .dashboard-chat-action::before{content:"";position:absolute;left:14px;right:14px;bottom:7px;height:10px;border-radius:50%;background:rgba(28,63,116,.17);filter:blur(7px);pointer-events:none}
 .dashboard-chat-action .match-icon{position:relative;width:86px;height:86px;filter:drop-shadow(0 5px 5px rgba(26,67,132,.17));transition:filter .18s;animation:match-float 4s ease-in-out infinite}
@@ -548,4 +548,31 @@ body.public-demo .logout-button,body.public-demo .account-chip{display:none!impo
   .resume-match-copy p{display:none}
   .resume-match-card{padding:7px 9px;gap:5px}
   .resume-match-card>.resume-dropzone{min-height:45px}
+}
+
+/* The navigation opens the existing full conversation as a workspace page.
+   Keep the floating launcher for other pages only, where it remains a popup. */
+#chat-view{height:calc(100dvh - 70px);min-height:540px}
+#chat-view .chat-view-title{flex:0 0 auto;padding:0 0 17px}
+#chat-view .chat-view-title h1{margin:7px 0 4px}
+.dashboard-chat-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;flex:1;min-height:0;width:100%;max-width:1220px}
+#chat-view.has-chat-matches .dashboard-chat-layout{grid-template-columns:minmax(250px,.7fr) minmax(0,1.4fr)}
+.dashboard-chat-layout .chat-workspace{min-height:0}
+.dashboard-screen.chat-page .dashboard-chat-action{display:none}
+.job-row-actions{display:flex;justify-content:flex-start;padding-top:11px}
+.job-posting-link{display:inline-flex;align-items:center;justify-content:center;min-height:37px;padding:8px 13px;border-radius:9px;background:var(--blue);color:#fff;font-size:11px;font-weight:800;text-decoration:none;white-space:nowrap}
+.job-posting-link:hover{background:var(--blue-deep)}
+.job-posting-link:focus-visible{outline:3px solid #8bb8fa;outline-offset:3px}
+@media(max-width:850px){
+  #chat-view{height:auto;min-height:calc(100dvh - 70px)}
+  .dashboard-chat-layout{display:flex;flex-direction:column;flex:0 0 auto;gap:14px}
+  .dashboard-chat-layout .chat-workspace{flex:0 0 auto;height:max(460px,calc(100dvh - 190px))}
+  #chat-view .chat-match-panel{order:1;flex:0 0 310px;height:310px;padding:14px}
+}
+@media(max-width:650px){
+  #chat-view{min-height:calc(100dvh - 114px - env(safe-area-inset-bottom,0px));padding-bottom:16px}
+  #chat-view .chat-view-title{padding-bottom:11px}
+  .dashboard-chat-layout .chat-workspace{height:max(440px,calc(100dvh - 220px - env(safe-area-inset-bottom,0px)))}
+  #chat-view .chat-match-panel{flex-basis:300px;height:300px;padding:12px}
+  .job-posting-link{width:100%}
 }

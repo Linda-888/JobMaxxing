@@ -93,7 +93,13 @@ class LocalFlowTest(unittest.TestCase):
         self.assertIn('id="resume-match-heading">Resume Maxxing', html)
         self.assertIn('id="resume-document-icon"', html)
         self.assertIn('class="side-nav side-nav-resume" data-view="resume"', html)
-        self.assertLess(html.index('class="side-nav open-mini-chat"'), html.index('class="side-nav side-nav-resume"'))
+        self.assertIn('class="side-nav side-nav-chat" data-view="chat"', html)
+        self.assertLess(html.index('class="side-nav side-nav-chat"'), html.index('class="side-nav side-nav-resume"'))
+        self.assertIn('id="chat-view" class="dashboard-view" hidden', html)
+        self.assertIn('id="dashboard-chat-layout"', html)
+        self.assertIn('id="mini-chat-expand"', html)
+        self.assertIn('Full page ↗</button>', html)
+        self.assertEqual(html.count('class="dashboard-chat-action open-mini-chat"'), 1)
         self.assertNotIn('id="discover-open-resume"', html)
         self.assertNotIn('id="onboarding-open-resume"', html)
         self.assertIn('id="resume-view" class="dashboard-view"', html)
@@ -111,6 +117,8 @@ class LocalFlowTest(unittest.TestCase):
         self.assertNotIn("Resume matching", script.decode("utf-8"))
         self.assertIn("state.publicDemo ? 'Keyword matching' : 'On-device AI'", script.decode("utf-8"))
         self.assertIn("Verify eligibility on the employer posting.", script.decode("utf-8"))
+        self.assertIn("'job-posting-link', 'View job posting ↗'", script.decode("utf-8"))
+        self.assertNotIn("Open original posting ↗", script.decode("utf-8"))
 
     def test_account_chat_progress_and_private_files(self):
         with patch.object(server, "fetch_jobs", return_value={"jobs": [], "sources": [], "checked_at": server.utc_now()}):

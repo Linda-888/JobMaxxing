@@ -66,10 +66,11 @@ function jobCard(job, reason = '') {
   foot.append(el('span', '', `${job.source || 'Employer'} · ${humanDate(job.posted_at)}`));
   const url = safeUrl(job.url);
   if (url) {
-    const link = el('a', '', 'View original ↗');
+    const link = el('a', 'job-posting-link', 'View job posting ↗');
     link.href = url;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
+    link.setAttribute('aria-label', `View job posting for ${job.title || 'this role'} at ${job.company || 'the employer'}`);
     foot.append(link);
   }
   card.append(foot);
@@ -157,7 +158,7 @@ function runResumeMatch() {
       const row = el('div', 'match-row');
       row.append(el('strong', '', match.job.title), el('small', '', `${match.job.company} · ${match.job.location}`),
         el('p', '', match.reasons.join(' · ')));
-      const link = el('a', '', 'View original ↗');
+      const link = el('a', '', 'View job posting ↗');
       link.href = safeUrl(match.job.url);
       link.target = '_blank'; link.rel = 'noopener noreferrer';
       row.append(link);

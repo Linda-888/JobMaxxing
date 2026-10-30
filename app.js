@@ -273,6 +273,8 @@ function updateIdentity() {
   const chatLabel = state.ai ? 'Chat with AI' : 'Career chat';
   $('#dashboard-chat-label').textContent = chatLabel;
   $('#sidebar-chat-label').textContent = chatLabel;
+  $('#chat-view-heading').textContent = chatLabel;
+  if (state.view === 'chat') $('#breadcrumb-view').textContent = chatLabel;
   $('#mini-chat-title').textContent = chatLabel;
   $$('.open-mini-chat').forEach(button => {
     button.title = state.ai ? 'Continue your AI career conversation' : 'Career chat is in guided preview; AI is not connected';
@@ -531,7 +533,7 @@ function renderMemberProfile() {
       const item = makeElement('li', 'member-lead');
       item.append(makeElement('strong', '', job.title),
         makeElement('span', '', `${job.company} · ${job.location || 'Location not listed'}`));
-      const link = makeElement('a', '', 'View employer posting ↗');
+      const link = makeElement('a', '', 'View job posting ↗');
       link.href = job.url;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
@@ -739,6 +741,7 @@ let pendingChatMessage = '';
 let chatSending = false;
 function enterOnboarding() {
   closeMiniChat(false);
+  moveFullChat(false);
   renderMessages();
   renderProfile();
   renderChatMatches();
@@ -818,9 +821,10 @@ async function sendChatMessage(source) {
       $('#mini-chat-mode').textContent = 'AI temporarily unavailable · guided reply';
     }
     renderChatPath();
-    const activeScreen = source === 'mini' ? !$('#mini-chat').hidden : !$('#onboarding-screen').hidden;
+    const activeScreen = source === 'mini' ? !$('#mini-chat').hidden :
+      (!$('#onboarding-screen').hidden || (!$('#dashboard-screen').hidden && state.view === 'chat'));
     if (activeScreen && (document.activeElement === document.body ||
-      (source === 'mini' ? $('#mini-chat').contains(document.activeElement) : $('#onboarding-screen').contains(document.activeElement)))) input.focus();
+      (source === 'mini' ? $('#mini-chat').contains(document.activeElement) : $('.chat-workspace').contains(document.activeElement)))) input.focus();
   }
 }
 $('#chat-form').addEventListener('submit', event => {
@@ -910,18 +914,42 @@ function enterDashboard(view = 'discover') {
   if (!state.checkedAt) loadJobs(); else loadAiMatches();
 }
 
+function moveFullChat(toDashboard) {
+  const destination = toDashboard ? $('#dashboard-chat-layout') : $('.onboarding-main');
+  if ($('#chat-match-panel').parentElement === destination) return;
+  destination.append($('#chat-match-panel'), $('.chat-workspace'));
+}
+
 function setView(view) {
+  if (view === 'chat') closeMiniChat(false);
+  moveFullChat(view === 'chat');
   state.view = view;
-  for (const name of ['discover', 'resume', 'saved', 'profile']) $(`#${name}-view`).hidden = name !== view;
+  for (const name of ['discover', 'chat', 'resume', 'saved', 'profile']) $(`#${name}-view`).hidden = name !== view;
+  $('#dashboard-screen').classList.toggle('chat-page', view === 'chat');
   $$('.side-nav,.mobile-nav button').forEach(button => button.classList.toggle('active', button.dataset.view === view));
   $('#breadcrumb-view').textContent = { discover: 'Discover jobs', resume: 'Resume Maxxing', saved: 'Saved jobs',
-    profile: state.user ? 'My career profile' : 'My direction' }[view];
+    profile: state.user ? 'My career profile' : 'My direction', chat: $('#sidebar-chat-label').textContent }[view];
   if (view === 'saved') renderSaved();
   if (view === 'resume') renderResumeResults();
   if (view === 'profile') renderProfile();
+  if (view === 'chat') {
+    renderMessages();
+    renderProfile();
+    renderChatMatches();
+    const log = $('#chat-messages');
+    log.scrollTop = log.scrollHeight;
+  }
   window.scrollTo(0, 0);
 }
-$$('[data-view]').forEach(button => button.addEventListener('click', () => setView(button.dataset.view)));
+function openFullChat() {
+  if ($('#dashboard-screen').hidden) enterDashboard('chat');
+  else setView('chat');
+  (state.chatMode ? $('#chat-input') : $('.chat-card .chat-path-button')).focus();
+}
+$$('[data-view]').forEach(button => button.addEventListener('click', () => {
+  if (button.dataset.view === 'chat') openFullChat();
+  else setView(button.dataset.view);
+}));
 let miniChatOpener = null;
 function closeMiniChat(restoreFocus = true) {
   const panel = $('#mini-chat');
@@ -948,7 +976,7 @@ function toggleMiniChat(opener) {
 }
 $$('.open-mini-chat').forEach(button => button.addEventListener('click', event => toggleMiniChat(event.currentTarget)));
 $('#mini-chat-close').addEventListener('click', () => closeMiniChat());
-$('#mini-chat-expand').addEventListener('click', enterOnboarding);
+$('#mini-chat-expand').addEventListener('click', openFullChat);
 $('#mini-chat').addEventListener('keydown', event => {
   if (event.key === 'Escape') { event.preventDefault(); closeMiniChat(); }
 });
@@ -970,7 +998,7 @@ $('#mini-chat-view-jobs').addEventListener('click', () => {
   $('#results-count').focus({ preventScroll: true });
   $('#job-cards').scrollIntoView({ block: 'start' });
 });
-$('#return-to-chat').addEventListener('click', enterOnboarding);
+$('#return-to-chat').addEventListener('click', openFullChat);
 $('#jump-direction').addEventListener('click', () => $('#profile-form').scrollIntoView({ behavior: 'smooth', block: 'start' }));
 $('#direction-browse').addEventListener('click', () => {
   const { profile, direction } = directionFormValues();
@@ -993,7 +1021,7 @@ $('#member-next-action').addEventListener('click', event => {
     $('#profile-form .direction-activities').scrollIntoView({ behavior: 'smooth', block: 'start' });
     $('#profile-form input[name="activities"]')?.focus({ preventScroll: true });
   }
-  else if (action === 'chat') enterOnboarding();
+  else if (action === 'chat') openFullChat();
   else if (action === 'saved' || action === 'discover') setView(action);
 });
 
@@ -1029,7 +1057,7 @@ function makeResumeMatchItem(match, job) {
   item.append(top, makeElement('h3', '', job.title),
     makeElement('p', 'chat-match-location', `${job.location || 'Location not listed'}${job.job_type ? ` · ${job.job_type}` : ''}${job.workplace === 'Remote' ? ' · Remote' : ''}`),
     makeElement('p', 'chat-match-reason', match.reason));
-  const link = makeElement('a', 'chat-match-link', 'View posting ↗');
+  const link = makeElement('a', 'chat-match-link', 'View job posting ↗');
   link.href = job.url;
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
@@ -1782,6 +1810,7 @@ function renderChatMatches() {
   $('#view-chat-jobs').textContent = 'Browse jobs anytime →';
   panel.hidden = !showPanel;
   $('#onboarding-screen').classList.toggle('has-chat-matches', showPanel);
+  $('#chat-view').classList.toggle('has-chat-matches', showPanel);
   if (!showPanel) return;
   const list = $('#chat-match-list');
   const criteria = $('#chat-match-criteria');
@@ -1851,7 +1880,7 @@ function renderChatMatches() {
     item.append(makeElement('p', 'chat-match-reason', chatMatchReason(job, preference)));
     if (preference.years.length && job.job_type === 'Internship' && !(job.class_years || []).length)
       item.append(makeElement('span', 'chat-match-year', 'Student year not stated'));
-    const link = makeElement('a', 'chat-match-link', 'View posting ↗');
+    const link = makeElement('a', 'chat-match-link', 'View job posting ↗');
     link.href = job.url;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
@@ -2195,7 +2224,14 @@ function makeJobRow(job, view) {
     const current = [...containerForView(view).querySelectorAll('.job-row')].find(item => item.dataset.jobId === job.id);
     current?.querySelector('.job-row-open')?.focus({ preventScroll: true });
   });
-  row.append(top, open);
+  const actions = makeElement('div', 'job-row-actions');
+  const postingLink = makeElement('a', 'job-posting-link', 'View job posting ↗');
+  postingLink.href = job.url;
+  postingLink.target = '_blank';
+  postingLink.rel = 'noopener noreferrer';
+  postingLink.setAttribute('aria-label', `View job posting for ${job.title} at ${job.company}`);
+  actions.append(postingLink);
+  row.append(top, open, actions);
   if (expanded) {
     const details = makeElement('section', 'job-expanded');
     details.id = `detail-${view}-${job.id}`;
@@ -2271,11 +2307,6 @@ function renderExpandedJob(section, job) {
   section.append(body);
   const footer = makeElement('div', 'job-detail-footer');
   footer.append(makeElement('span', '', `${detail?.checked_at ? (job.source === 'Remotive' ? 'Feed checked ' : 'Details checked ') + formatTime(detail.checked_at) : state.checkedAt ? 'List checked ' + formatTime(state.checkedAt) : 'Check the original page for current status'}`));
-  const link = makeElement('a', 'primary-button', 'Open original posting ↗');
-  link.href = job.url;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  footer.append(link);
   section.append(footer);
 }
 async function toggleSaved(job) {
