@@ -453,6 +453,9 @@ body.public-demo .logout-button,body.public-demo .account-chip{display:none!impo
   .guide-open-text{display:none}
   .guide-open-mark{display:block;font-size:16px}
   .dashboard-top .guide-open{margin-right:11px}
+  .dashboard-top .guide-open{width:auto;min-width:49px;padding:0 7px}
+  .dashboard-top .guide-open-text{display:block;font-size:10px}
+  .dashboard-top .guide-open-mark{display:none}
   .site-guide-card{padding:16px 18px}
   .guide-copy h2{font-size:21px}
   .guide-copy>p:last-child{font-size:12px}
