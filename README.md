@@ -1,5 +1,7 @@
 # JobMaxxing
 
+[Open the live guest demo](https://jobmaxxing-linda.onrender.com/)
+
 The intended outcome is that a student can have a short career conversation, find several potentially relevant openings, and see where each listing came from and when it was checked. This is a small public-employer-feed prototype, not a complete Handshake replacement.
 
 Run `python3 server.py` from this directory and open `http://127.0.0.1:8765/`.
@@ -8,9 +10,9 @@ Run `python3 server.py` from this directory and open `http://127.0.0.1:8765/`.
 
 The `render.yaml` Blueprint runs a guest-only version on Render. It has current public job feeds, guided career chat, browser-only saved jobs, and keyword-based resume suggestions. It does **not** offer live AI or online accounts. PDF, DOCX, and TXT resumes are briefly read in server memory for keyword matching; the files are not saved. The public demo does not load the local `.env`, account database, or Ollama model. The local version below retains its AI and account features.
 
-After publishing this repository, connect it to Render with its Blueprint deployment. Render supplies a public HTTPS address. Check that address in a fresh browser: complete or skip the guide, chat, browse jobs, save one, and upload a non-personal test resume. Do not use a GitHub Pages URL for the app: Pages cannot run its Python API.
+The public demo is deployed at [jobmaxxing-linda.onrender.com](https://jobmaxxing-linda.onrender.com/). Render's free service can take about a minute to wake after inactivity. In a fresh browser, complete or skip the guide, chat, browse jobs, save one, and upload a non-personal test resume. Do not use a GitHub Pages URL for the app: Pages cannot run its Python API.
 
-The first visit in a browser opens a four-step guide that points to the AI chat bubble, resume drop zone, job search and filters, and Saved jobs. The guide moves to the relevant screen for each step, then returns visitors to their original screen and scroll position when they finish, skip, or press Escape. **Skip** is available at every step. Finishing or skipping is remembered in that browser; **How it works** in the header opens the guide again.
+The first visit in a browser opens a four-step guide that points to the career chat bubble, resume drop zone, job search and filters, and Saved jobs. The guide moves to the relevant screen for each step, then returns visitors to their original screen and scroll position when they finish, skip, or press Escape. **Skip** is available at every step. Finishing or skipping is remembered in that browser; **How it works** in the header opens the guide again.
 
 Before the conversation begins, students choose **I have a direction** or **I'm still exploring**. The choice and a welcoming first question then appear as the opening messages in chat history. Students can change paths later without losing earlier messages. Guest history stays in this browser and signed-in history stays with the account; guest choices also follow a later sign-up. When AI is unavailable, the exploring path is a guided preview rather than a model-generated assessment. Browsing jobs is available from either path at any time.
 
