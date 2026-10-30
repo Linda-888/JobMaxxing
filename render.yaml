@@ -3,7 +3,7 @@ services:
     name: jobmaxxing-linda
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python build_semantic_assets.py
     startCommand: python server.py
     healthCheckPath: /api/session
     envVars:

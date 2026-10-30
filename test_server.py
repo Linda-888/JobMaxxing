@@ -115,7 +115,7 @@ class LocalFlowTest(unittest.TestCase):
         self.assertIn("'JOB MATCHING'", script.decode("utf-8"))
         self.assertIn("title: 'Resume Maxxing'", script.decode("utf-8"))
         self.assertNotIn("Resume matching", script.decode("utf-8"))
-        self.assertIn("state.publicDemo ? 'Keyword matching' : 'On-device AI'", script.decode("utf-8"))
+        self.assertIn("state.publicDemo ? 'Private AI matching' : 'On-device AI matching'", script.decode("utf-8"))
         self.assertIn("Verify eligibility on the employer posting.", script.decode("utf-8"))
         self.assertIn("'job-posting-link', 'View job posting ↗'", script.decode("utf-8"))
         self.assertNotIn("Open original posting ↗", script.decode("utf-8"))
@@ -191,7 +191,7 @@ class LocalFlowTest(unittest.TestCase):
         self.assertEqual(status, 503)
         self.assertIn("not connected", result["error"])
 
-    def test_public_demo_is_guest_only_and_resume_matches_without_ai(self):
+    def test_public_demo_is_guest_only_and_resume_matches_with_private_ai(self):
         job = {"id": "figma:demo", "title": "Software Engineer Intern", "company": "Figma",
                "summary": "Build software with Python and SQL.", "job_type": "Internship",
                "location": "Remote - United States", "workplace": "Remote", "early_career": True,
@@ -217,7 +217,7 @@ class LocalFlowTest(unittest.TestCase):
             status, result = self.request_multipart("/api/resume-recommendations", "resume.txt", resume,
                                                     origin=self.base)
             self.assertEqual(status, 200)
-            self.assertEqual(result["mode"], "keyword")
+            self.assertEqual(result["mode"], "semantic")
             self.assertEqual(result["matches"][0]["id"], job["id"])
             self.assertIn("Python", result["signals"]["skills"])
             status, _ = self.request("/api/jobs?refresh=1")
@@ -497,8 +497,8 @@ class LocalFlowTest(unittest.TestCase):
                                              "skills": ["Python", "SQL"]})
         self.assertEqual([match["id"] for match in result["matches"]], ["notion:101"])
         self.assertLess(result["matches"][0]["score"], 98)
-        self.assertIn("data analytics", result["matches"][0]["reason"])
         self.assertIn("Python, SQL", result["matches"][0]["reason"])
+        self.assertIn("Build Python data pipelines", result["matches"][0]["reason"])
         self.assertEqual(local_call.call_args.args[0], f"{server.LOCAL_AI_URL}/api/chat")
         payload = json.loads(local_call.call_args.kwargs["data"])
         self.assertEqual(payload["model"], server.LOCAL_AI_MODEL)

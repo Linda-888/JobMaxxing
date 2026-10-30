@@ -91,7 +91,7 @@ function renderGuide() {
   $('#guide-description').textContent = state.publicDemo && guideStep === 0 ?
     'This bubble opens a guided career conversation. Tell us what interests you to see possible jobs.' :
     state.publicDemo && guideStep === 1 ?
-      'Open Resume Maxxing here to upload a PDF, DOCX, or TXT. The file is read temporarily for keyword suggestions, then discarded; chat is optional.' : step.description;
+      'Open Resume Maxxing here to upload a PDF, DOCX, or TXT. Private AI compares your experience with current jobs, then discards the file; chat is optional.' : step.description;
   $$('.guide-dots span').forEach((dot, index) => dot.classList.toggle('active', index === guideStep));
   $('#guide-back').hidden = guideStep === 0;
   $('#guide-next').textContent = guideStep === guideSteps.length - 1 ? 'Finish' : 'Next →';
@@ -253,10 +253,10 @@ function updateIdentity() {
   if (state.publicDemo) {
     $('.resume-match-kicker').textContent = 'GUEST DEMO · NOT STORED';
     $('#resume-match-heading').textContent = 'Resume Maxxing';
-    $('#resume-guidance').textContent = 'Add a PDF, DOCX, or TXT (up to 5 MB). We read it briefly on this website’s server for keyword suggestions, then discard it. No AI reads your file.';
+    $('#resume-guidance').textContent = 'Add a PDF, DOCX, or TXT (up to 5 MB). A private AI model on this website’s server compares your experience with current jobs. Your file is not saved or sent to another AI service.';
     $('#dashboard-resume-kicker').textContent = 'GUEST DEMO · NOT STORED';
     $('#dashboard-resume-heading').textContent = 'Find jobs from your resume';
-    $('#dashboard-resume-guidance').textContent = 'Add a PDF, DOCX, or TXT (up to 5 MB). We read it briefly on this website’s server for keyword suggestions, then discard it. No AI reads your file.';
+    $('#dashboard-resume-guidance').textContent = 'Add a PDF, DOCX, or TXT (up to 5 MB). A private AI model on this website’s server compares your experience with current jobs. Your file is not saved or sent to another AI service.';
     $('#mini-resume-guidance').textContent = 'PDF, DOCX, TXT · read briefly, not saved';
   }
   const local = state.aiProvider === 'local';
@@ -1033,7 +1033,7 @@ function currentResumeMatches() {
 function renderResumeCriteria(container) {
   container.replaceChildren();
   container.append(makeElement('span', '', 'Resume-based'),
-    makeElement('span', '', state.publicDemo ? 'Keyword matching' : 'On-device AI'));
+    makeElement('span', '', state.publicDemo ? 'Private AI matching' : 'On-device AI matching'));
   const labels = [state.resumePreferences.role, state.resumePreferences.job_type,
     state.resumePreferences.location, state.resumePreferences.workplace,
     ...state.resumeSignals.roles.slice(0, 2), ...state.resumeSignals.skills.slice(0, 4)].filter(Boolean);
@@ -1042,8 +1042,8 @@ function renderResumeCriteria(container) {
 
 function resumeMatchSummary(count) {
   if (count) return state.publicDemo ?
-    'Keyword-based suggestions from your resume and current public postings. These are not an AI review or an eligibility decision; check each employer’s requirements.' :
-    'On-device AI identified role and skill signals; current postings are ranked by overlap. Scores show relevance, not hiring chances. Check each employer’s requirements.';
+    'Private AI compares the meaning of your experience with current public postings. These are suggestions, not an eligibility decision; check each employer’s requirements.' :
+    'On-device AI reads resume evidence; a private semantic model compares it with current postings. Scores show relevance, not hiring chances. Check each employer’s requirements.';
   return state.resumeSignals.roles.length || state.resumeSignals.skills.length ?
     'No current public jobs matched these resume signals and any stated job-type, location, or work-setup preferences. Try a different resume or browse all jobs.' :
     'The resume did not provide clear role or skill signals. Try a text-based resume with project or skills details.';
@@ -1078,7 +1078,7 @@ function renderResumeResults() {
     return;
   }
   if (state.resumeStatus === 'loading') {
-    status.textContent = state.publicDemo ? 'Reading your resume for keyword-based suggestions…' :
+    status.textContent = state.publicDemo ? 'Analyzing your experience with private AI and checking current jobs…' :
       'Reading your resume with on-device AI and checking current jobs…';
     return;
   }
@@ -1151,7 +1151,7 @@ async function uploadResume(file) {
   state.resumePreferences = { job_type: null, location: null, workplace: null, role: null };
   state.resumeError = '';
   state.resumeStatus = 'loading';
-  state.resumeNotice = state.publicDemo ? `Reading ${file.name} for keyword-based job suggestions…` :
+  state.resumeNotice = state.publicDemo ? `Analyzing ${file.name} with private AI…` :
     `Reading ${file.name} and finding current jobs on this Mac…`;
   if (state.chatBrowseSource === 'resume') state.chatBrowseActive = false;
   for (const input of $$('#resume-file,#dashboard-resume-file,#mini-resume-file')) input.value = '';
@@ -1191,7 +1191,7 @@ async function uploadResume(file) {
     } catch (error) {
       if (error.name === 'AbortError') return;
       throw new Error(state.publicDemo ? 'Could not reach Resume Maxxing. Please try again later.' :
-        'Could not reach local Resume Maxxing. Your resume was not sent to another service.');
+        'Could not reach Resume Maxxing. Your resume was not sent to another service.');
     }
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || (state.publicDemo ? 'Could not match this resume.' :
@@ -1741,7 +1741,7 @@ function renderMiniMatches() {
   button.textContent = 'Browse all jobs →';
   if (state.resumeName && state.resumeStatus !== 'idle') {
     if (state.resumeStatus === 'loading') {
-      status.textContent = state.publicDemo ? 'Reading your resume for keyword-based suggestions…' :
+      status.textContent = state.publicDemo ? 'Analyzing your experience with private AI…' :
         'Reading your resume with on-device AI…';
       return;
     }
@@ -1821,7 +1821,7 @@ function renderChatMatches() {
   if (resumeActive) {
     if (state.resumeStatus === 'loading') {
       $('#chat-match-status').textContent = state.publicDemo ?
-        `Reading ${state.resumeName} for keyword-based job suggestions…` :
+        `Analyzing ${state.resumeName} with private AI…` :
         `Reading ${state.resumeName} and matching it to current job listings with on-device AI…`;
       return;
     }
@@ -2085,7 +2085,7 @@ function renderJobs() {
     `No current jobs match ${state.directionBrowseActive ? 'these direction choices' : 'those details'}. Try broader preferences or show all jobs.`;
   const hasResumeMatches = state.resumeStatus === 'ready' || state.resumeStatus === 'empty';
   const suggestionText = state.directionBrowseActive || hasStructuredDirection() ? `${suggestedCount} direction matches` :
-    hasResumeMatches ? `${suggestedCount} resume-based ${state.publicDemo ? 'keyword' : 'AI'} suggestions` :
+    hasResumeMatches ? `${suggestedCount} resume-based AI suggestions` :
     state.aiMatchStatus === 'ready' ? `${suggestedCount} AI suggestions` :
     state.aiMatchStatus === 'loading' ? `${suggestedCount} keyword suggestions · AI reviewing jobs…` :
     state.aiMatchStatus === 'error' ? `${suggestedCount} keyword suggestions · AI suggestions unavailable` :

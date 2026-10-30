@@ -32,6 +32,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 
+import semantic_matcher
+
 ROOT = Path(__file__).resolve().parent
 PUBLIC_DEMO = os.environ.get("JOBMAXXING_PUBLIC_DEMO") == "1"
 LOCAL_AI_URL = "http://127.0.0.1:11434"
@@ -1225,19 +1227,11 @@ def normalize_resume_term(value):
 
 RESUME_ROLE_FILLER = {"intern", "internship", "internships", "student", "students", "summer",
                       "job", "jobs", "role", "roles", "opportunity", "opportunities"}
-RESUME_ROLE_EQUIVALENTS = {"engineering": "engineer", "engineer": "engineer",
-                           "analytics": "analysis", "analyst": "analysis", "analysis": "analysis",
-                           "scientist": "science", "science": "science",
-                           "development": "developer", "developer": "developer"}
 
 
 def clean_resume_role(value):
     """Drop student/internship wording so it cannot masquerade as a job-field match."""
     return " ".join(word for word in normalize_resume_term(value).split() if word not in RESUME_ROLE_FILLER)
-
-
-def normalize_resume_role(value):
-    return " ".join(RESUME_ROLE_EQUIVALENTS.get(word, word) for word in clean_resume_role(value).split())
 
 
 def extract_resume_profile(resume_text):
@@ -1339,68 +1333,6 @@ def extract_demo_resume_profile(resume_text):
     return {"roles": found_roles[:3], "skills": [skill for skill in skills if present(skill)][:10]}
 
 
-def resume_job_match_reason(job, roles, skills):
-    title = normalize_resume_term(job.get("title", ""))
-    department = normalize_resume_term(job.get("department", ""))
-    summary = normalize_resume_term(job.get("summary", ""))
-    eligibility = normalize_resume_term(job.get("eligibility_preview", ""))
-    role_hits = []
-    skill_hits = []
-    score = 0
-
-    def relevant(term, text, role=False):
-        normalized = normalize_resume_role(term) if role else normalize_resume_term(term)
-        if not normalized:
-            return False
-        normalized_text = normalize_resume_term(text)
-        if f" {normalized} " in f" {normalized_text} ":
-            return True
-        tokens = [RESUME_ROLE_EQUIVALENTS.get(word, word) if role else word
-                  for word in normalized.split() if len(word) > 2]
-        text_words = {RESUME_ROLE_EQUIVALENTS.get(word, word) if role else word
-                      for word in normalized_text.split()}
-        required = max(1, (len(tokens) * 2 + 2) // 3)
-        return bool(tokens) and sum(word in text_words for word in tokens) >= required
-
-    for role in roles:
-        if relevant(role, title, role=True):
-            role_hits.append(role)
-            score = max(score, 36)
-        elif relevant(role, department, role=True):
-            role_hits.append(role)
-            score = max(score, 26)
-        elif relevant(role, summary, role=True):
-            role_hits.append(role)
-            score = max(score, 14)
-    skill_score = 0
-    for skill in skills:
-        if relevant(skill, title):
-            skill_hits.append(skill)
-            skill_score += 20
-        elif relevant(skill, department):
-            skill_hits.append(skill)
-            skill_score += 16
-        elif relevant(skill, summary):
-            skill_hits.append(skill)
-            skill_score += 12
-        elif relevant(skill, eligibility):
-            skill_hits.append(skill)
-            skill_score += 8
-    score += min(48, skill_score)
-    if score and job.get("early_career"):
-        score += 8
-    if score and job.get("job_type") == "Internship":
-        score += 10
-    if not score:
-        return 0, ""
-    reason_parts = []
-    if role_hits:
-        reason_parts.append(f"The role connects to {', '.join(role_hits[:2])} from your resume.")
-    if skill_hits:
-        reason_parts.append(f"The listing also mentions {', '.join(skill_hits[:3])}.")
-    return min(98, score), " ".join(reason_parts)
-
-
 US_STATE_CODES = frozenset("AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY".split())
 US_CITY_NAMES = ("san francisco", "new york", "seattle", "chicago", "palo alto", "san mateo", "boston", "austin", "atlanta", "los angeles")
 
@@ -1443,7 +1375,7 @@ def resume_location_matches(job, location):
 
 
 def recommend_jobs_from_resume(resume_text):
-    """Extract resume signals locally, then rank only verified current feed listings."""
+    """Use private semantic inference on evidence, then rank verified feed listings."""
     feed = fetch_jobs()
     signals = extract_demo_resume_profile(resume_text) if PUBLIC_DEMO else extract_resume_profile(resume_text)
     preferences = resume_search_preferences(resume_text)
@@ -1451,17 +1383,13 @@ def recommend_jobs_from_resume(resume_text):
     student_focus = bool(resume_words.intersection({"student", "students", "undergraduate", "undergrad",
                                                    "freshman", "sophomore", "junior", "senior",
                                                    "intern", "internship", "internships"}))
-    if not signals["roles"] and not signals["skills"]:
-        return {"matches": [], "signals": signals, "preferences": preferences}
-    ranked = []
+    candidates = []
     for job in feed["jobs"]:
         if preferences["job_type"] and job.get("job_type") != preferences["job_type"]:
             continue
         if preferences["workplace"] and job.get("workplace") != preferences["workplace"]:
             continue
         if not resume_location_matches(job, preferences["location"]):
-            continue
-        if preferences["role"] and resume_job_match_reason(job, [preferences["role"]], [])[0] < 36:
             continue
         title_words = normalize_resume_term(job.get("title", "")).split()
         if {"phd", "doctoral", "postdoctoral", "postdoc"}.intersection(title_words) or \
@@ -1472,22 +1400,11 @@ def recommend_jobs_from_resume(resume_text):
         high_school_title = {"high", "school"}.issubset(title_words)
         if student_focus and ((senior_title and not is_internship) or high_school_title):
             continue
-        roles = list(dict.fromkeys([preferences["role"], *signals["roles"]])) if preferences["role"] else signals["roles"]
-        score, reason = resume_job_match_reason(job, roles, signals["skills"])
-        if score >= 24:
-            ranked.append((score, str(job.get("posted_at") or ""), job, reason))
-    ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
-    matches, seen_roles = [], set()
-    for score, _, job, reason in ranked:
-        role_key = (str(job.get("company") or "").casefold(), normalize_resume_term(job.get("title", "")))
-        if role_key in seen_roles:
-            continue
-        matches.append({"id": job["id"], "score": score, "reason": reason})
-        seen_roles.add(role_key)
-        if len(matches) == 8:
-            break
-    return {"matches": matches, "signals": signals, "preferences": preferences,
-            "mode": "keyword" if PUBLIC_DEMO else "local_ai"}
+        candidates.append(job)
+    analysis = semantic_matcher.match_resume_to_jobs(resume_text, candidates, preferences["role"])
+    signals["roles"] = list(dict.fromkeys([*signals["roles"], *analysis["roles"]]))[:3]
+    return {"matches": analysis["matches"], "signals": signals, "preferences": preferences,
+            "mode": "semantic"}
 
 
 def career_chat_instructions(profile, chat_mode="directed"):
