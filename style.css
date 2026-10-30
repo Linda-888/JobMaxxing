@@ -457,3 +457,114 @@ body.public-demo .logout-button,body.public-demo .account-chip{display:none!impo
   .guide-copy h2{font-size:21px}
   .guide-copy>p:last-child{font-size:12px}
 }
+
+/* Resume matching is a first-class path, whether someone starts on the dashboard or in chat. */
+.side-nav-resume{height:49px;border:1px solid #c8ddfa;background:#f1f7ff;color:#175fc4;font-weight:800}
+.side-nav-resume:hover:not(.active){background:#e7f1ff;border-color:#9ec4f7}
+.side-nav-resume.active{border-color:#9ec4f7;background:#e5f0ff}
+.side-nav-resume .nav-icon{font-size:25px;font-weight:750}
+.onboarding-resume-entry{display:flex;align-items:center;gap:11px;width:100%;min-height:46px;margin-top:20px;padding:9px 13px;border:1px solid #a9c8f5;border-radius:11px;background:#fff;color:#155bc1;font-size:12px;font-weight:800;text-align:left;box-shadow:0 7px 18px rgba(25,82,160,.08)}
+.onboarding-resume-entry span{font-size:21px;line-height:1}
+.onboarding-resume-entry small{margin-left:auto;font-size:18px}
+.onboarding-resume-entry:hover{background:#eef6ff}
+.discover-resume-entry{display:flex;align-items:center;gap:14px;width:100%;margin:2px 0 16px;padding:15px 18px;border:1px solid #a9c9f5;border-radius:15px;background:linear-gradient(110deg,#eaf3ff,#f9fcff);color:#204b85;text-align:left;box-shadow:0 10px 25px rgba(25,75,150,.06)}
+.discover-resume-entry:hover{border-color:#6eaaef;background:#e1efff}
+.discover-resume-entry>span:nth-child(2){flex:1;min-width:0}
+.discover-resume-entry strong,.discover-resume-entry small{display:block}
+.discover-resume-entry strong{font-size:15px;line-height:1.3;color:#1659b9}
+.discover-resume-entry small{margin-top:3px;color:#55749d;font-size:11px;line-height:1.35}
+.discover-resume-icon{display:grid;place-items:center;width:39px;height:39px;flex:0 0 39px;border-radius:11px;background:#d8eaff;color:#1663c7;font-size:27px;font-weight:800}
+.discover-resume-arrow{font-size:23px;color:#1663c7}
+.discover-resume-entry:focus-visible,.onboarding-resume-entry:focus-visible,.side-nav-resume:focus-visible{outline:3px solid #80b2f5;outline-offset:2px}
+
+.resume-match-card{grid-template-columns:minmax(0,1fr) minmax(220px,43%);gap:10px 16px;padding:15px 18px;border-color:#bed7fa;background:linear-gradient(110deg,#fff,#f5f9ff);box-shadow:0 10px 28px rgba(31,91,171,.08)}
+.resume-match-kicker{font-size:9px}
+.resume-match-copy h2{font-size:17px;margin:4px 0}
+.resume-match-copy p{font-size:10px;line-height:1.45;max-width:510px}
+.resume-dropzone{min-height:68px;padding:11px 14px;gap:12px;border:2px dashed #82afea;border-radius:12px;background:#eaf3ff}
+.resume-dropzone:hover,.resume-dropzone.is-dragging,.resume-dropzone.is-matching{background:#dfedff;border-color:#1668d6;box-shadow:0 0 0 3px rgba(83,146,229,.12)}
+.resume-drop-icon{width:36px;height:36px;flex-basis:36px;border-radius:10px;background:#d4e7ff;font-size:25px}
+.resume-dropzone strong{font-size:13px}
+.resume-dropzone small{font-size:10px;line-height:1.35}
+.resume-match-card>.resume-status{grid-column:1;grid-row:2;font-size:10px}
+.resume-match-card>.resume-clear{grid-column:2;grid-row:2;justify-self:end;font-size:10px}
+.resume-clear{font-size:11px}
+
+.resume-view-title{padding-bottom:20px}
+.resume-view-title p{max-width:720px;line-height:1.5}
+.resume-view-card,.resume-view-matches{width:min(100%,940px);border:1px solid #d3e2f7;border-radius:18px;background:#fff;box-shadow:0 12px 28px rgba(28,73,133,.055)}
+.resume-view-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,45%);align-items:center;gap:17px 24px;padding:25px;border-color:#a9ccf8;background:linear-gradient(120deg,#fff,#f1f7ff)}
+.resume-view-card h2{margin:5px 0 8px;color:#1a3f77;font-size:22px;letter-spacing:-.03em}
+.resume-view-card p{max-width:540px;margin:0;color:#61799a;font-size:12px;line-height:1.55}
+.resume-view-dropzone{min-height:112px;padding:20px}
+.resume-view-dropzone .resume-drop-icon{width:46px;height:46px;flex-basis:46px;font-size:32px}
+.resume-view-dropzone strong{font-size:17px}
+.resume-view-dropzone small{font-size:11px;margin-top:5px}
+.resume-view-feedback{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.resume-view-feedback .resume-status{font-size:12px}
+.resume-view-feedback .resume-clear{border:1px solid #c8daf3;border-radius:8px;background:#fff;color:#2d5e9d;padding:6px 10px}
+.resume-view-matches{margin-top:18px;padding:23px 25px}
+.resume-results-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.resume-results-head h2{margin:4px 0 0;color:#1b3e72;font-size:21px;letter-spacing:-.03em}
+#resume-results-count{color:#1765c6;font-size:13px;font-weight:800}
+#resume-results-status{margin:9px 0 12px;color:#607999;font-size:12px;line-height:1.5}
+#resume-results-signals{margin:0 0 14px}
+.resume-results-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.resume-result-item{display:flex;flex-direction:column;min-width:0;padding:16px;background:#f8fbff}
+.resume-result-item h3{font-size:16px;line-height:1.35;margin:9px 0 4px}
+.resume-result-item p{font-size:11px;line-height:1.5}
+.resume-result-item .chat-match-link{align-self:flex-start;margin-top:auto;padding-top:10px;font-size:11px}
+.resume-results-foot{margin:16px 0 0;color:#8192aa;font-size:11px;line-height:1.5}
+
+.mini-resume-wrap{flex:0 0 auto;padding:9px 12px;border-bottom:1px solid #dce9fa;background:#f3f8ff}
+.mini-resume-dropzone{min-height:56px;padding:7px 10px;gap:9px;border-width:1px}
+.mini-resume-dropzone .resume-drop-icon{width:31px;height:31px;flex-basis:31px;font-size:21px}
+.mini-resume-dropzone strong{font-size:11px}
+.mini-resume-dropzone small{font-size:9px}
+.mini-resume-feedback{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mini-resume-feedback .resume-status{min-width:0;margin-top:4px;font-size:9px;line-height:1.35}
+.mini-resume-feedback .resume-clear{flex:0 0 auto;padding:3px 1px;font-size:9px}
+@media(max-width:960px){
+  .resume-match-card{grid-template-columns:minmax(0,1fr) minmax(200px,43%);padding:12px}
+  .resume-match-copy p{font-size:10px}
+  .resume-view-card{grid-template-columns:1fr}
+}
+@media(max-width:650px){
+  .onboarding-resume-entry{min-height:38px;margin-top:8px;padding:6px 10px;font-size:11px}
+  .onboarding-resume-entry span{font-size:18px}
+  .discover-resume-entry{gap:9px;margin:2px 0 12px;padding:11px 12px;border-radius:12px}
+  .discover-resume-icon{width:34px;height:34px;flex-basis:34px;font-size:23px}
+  .discover-resume-entry strong{font-size:13px}
+  .discover-resume-entry small{font-size:10px}
+  .mobile-nav button[data-view="resume"]{background:transparent;color:#1765c6;font-weight:800}
+  .mobile-nav button[data-view="resume"].active{background:#e3efff}
+  .resume-match-card{grid-template-columns:1fr;gap:7px;padding:10px 11px}
+  .resume-match-copy{grid-column:1}
+  .resume-match-copy h2{font-size:14px;margin:2px 0}
+  .resume-match-copy p{font-size:9px;line-height:1.35}
+  .resume-match-kicker{font-size:8px}
+  .resume-match-card>.resume-dropzone{grid-column:1;grid-row:auto;min-height:51px;padding:7px 10px}
+  .resume-match-card>.resume-status{grid-column:1;grid-row:auto;font-size:9px}
+  .resume-match-card>.resume-clear,.resume-match-card>.resume-status:not([hidden])+.resume-clear{grid-column:1;grid-row:auto;justify-self:end;padding:1px 3px}
+  .resume-dropzone strong{font-size:11px}
+  .resume-dropzone small{font-size:9px}
+  .resume-view-title{padding-bottom:15px}
+  .resume-view-card,.resume-view-matches{border-radius:14px}
+  .resume-view-card{gap:13px;padding:16px}
+  .resume-view-card h2{font-size:19px}
+  .resume-view-card p{font-size:11px}
+  .resume-view-dropzone{grid-column:1;grid-row:auto;min-height:95px;padding:13px}
+  .resume-view-dropzone strong{font-size:15px}
+  .resume-view-matches{margin-top:12px;padding:16px}
+  .resume-results-list{grid-template-columns:1fr}
+  .resume-result-item{padding:13px}
+  .resume-result-item h3{font-size:14px}
+  .mini-resume-wrap{padding:7px 10px}
+  .mini-resume-dropzone{min-height:51px;padding:6px 8px}
+  .mini-resume-dropzone strong{font-size:10px}
+}
+@media(max-width:650px) and (max-height:720px){
+  .resume-match-copy p{display:none}
+  .resume-match-card{padding:7px 9px;gap:5px}
+  .resume-match-card>.resume-dropzone{min-height:45px}
+}

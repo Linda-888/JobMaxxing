@@ -8,8 +8,8 @@ const legacyGuideSeenKey = 'resumemaxxing-site-guide-v1';
 const guideSteps = [
   { title: 'AI chat', description: 'This AI bubble opens a career conversation. If AI is offline, a guided chat is still available.',
     screen: 'dashboard', view: 'discover', target: () => $('.dashboard-chat-action'), placement: ['top', 'left', 'right', 'bottom'] },
-  { title: 'Add a resume', description: 'This is where you can add a PDF, DOCX, or TXT to find jobs related to your experience. It is optional.',
-    screen: 'onboarding', target: () => $('#resume-dropzone'), placement: ['bottom', 'left', 'right', 'top'] },
+  { title: 'Resume matching', description: 'Open this page to upload a PDF, DOCX, or TXT and see jobs related to your experience. You do not need to start a chat.',
+    screen: 'dashboard', view: 'resume', target: () => $('#dashboard-resume-dropzone'), placement: ['bottom', 'top', 'right', 'left'] },
   { title: 'Search and filter', description: 'Search for a role, employer, or city. Use Filters to narrow the jobs you see.',
     screen: 'dashboard', view: 'discover', target: () => $('.toolbar-left'), placement: ['bottom', 'right', 'left', 'top'] },
   { title: 'Saved jobs', description: 'Open Saved to revisit jobs you kept. Check each employer posting before applying.',
@@ -89,7 +89,7 @@ function renderGuide() {
   $('#guide-description').textContent = state.publicDemo && guideStep === 0 ?
     'This bubble opens a guided career conversation. Tell us what interests you to see possible jobs.' :
     state.publicDemo && guideStep === 1 ?
-      'Add a resume here for keyword-based suggestions. We read it temporarily and do not save the file.' : step.description;
+      'Drop or choose a resume here for keyword-based job suggestions. The file is read temporarily and not saved; chat is optional.' : step.description;
   $$('.guide-dots span').forEach((dot, index) => dot.classList.toggle('active', index === guideStep));
   $('#guide-back').hidden = guideStep === 0;
   $('#guide-next').textContent = guideStep === guideSteps.length - 1 ? 'Finish' : 'Next →';
@@ -252,6 +252,10 @@ function updateIdentity() {
     $('.resume-match-kicker').textContent = 'GUEST DEMO · NOT STORED';
     $('#resume-match-heading').textContent = 'Resume matching';
     $('#resume-guidance').textContent = 'Add a PDF, DOCX, or TXT (up to 5 MB). We read it briefly on this website’s server for keyword suggestions, then discard it. No AI reads your file.';
+    $('#dashboard-resume-kicker').textContent = 'GUEST DEMO · NOT STORED';
+    $('#dashboard-resume-heading').textContent = 'Find jobs from your resume';
+    $('#dashboard-resume-guidance').textContent = 'Add a PDF, DOCX, or TXT (up to 5 MB). We read it briefly on this website’s server for keyword suggestions, then discard it. No AI reads your file.';
+    $('#mini-resume-guidance').textContent = 'PDF, DOCX, TXT · read briefly, not saved';
   }
   const local = state.aiProvider === 'local';
   const chatMode = state.ai ?
@@ -906,15 +910,28 @@ function enterDashboard(view = 'discover') {
 
 function setView(view) {
   state.view = view;
-  for (const name of ['discover', 'saved', 'profile']) $(`#${name}-view`).hidden = name !== view;
+  for (const name of ['discover', 'resume', 'saved', 'profile']) $(`#${name}-view`).hidden = name !== view;
   $$('.side-nav,.mobile-nav button').forEach(button => button.classList.toggle('active', button.dataset.view === view));
-  $('#breadcrumb-view').textContent = { discover: 'Discover jobs', saved: 'Saved jobs',
+  $('#breadcrumb-view').textContent = { discover: 'Discover jobs', resume: 'Resume matching', saved: 'Saved jobs',
     profile: state.user ? 'My career profile' : 'My direction' }[view];
   if (view === 'saved') renderSaved();
+  if (view === 'resume') renderResumeResults();
   if (view === 'profile') renderProfile();
   window.scrollTo(0, 0);
 }
 $$('[data-view]').forEach(button => button.addEventListener('click', () => setView(button.dataset.view)));
+function openResumeView() {
+  closeMiniChat(false);
+  if (!state.user && state.guestStage !== 'discover') {
+    state.guestStage = 'discover';
+    state.hasDiscovered = true;
+    try { persistGuest(); } catch (_) { /* Upload still works when storage is unavailable. */ }
+  }
+  enterDashboard('resume');
+  $('#dashboard-resume-dropzone').focus({ preventScroll: true });
+}
+$('#discover-open-resume').addEventListener('click', openResumeView);
+$('#onboarding-open-resume').addEventListener('click', openResumeView);
 let miniChatOpener = null;
 function closeMiniChat(restoreFocus = true) {
   const panel = $('#mini-chat');
@@ -946,8 +963,10 @@ $('#mini-chat').addEventListener('keydown', event => {
   if (event.key === 'Escape') { event.preventDefault(); closeMiniChat(); }
 });
 $('#mini-chat-view-jobs').addEventListener('click', () => {
-  state.chatBrowseSource = 'conversation';
-  state.chatBrowseActive = hasChatDirection() && conversationJobMatches().total > 0;
+  const resumeSearch = state.resumeStatus === 'ready' || state.resumeStatus === 'empty';
+  state.chatBrowseSource = resumeSearch ? 'resume' : 'conversation';
+  state.chatBrowseActive = resumeSearch ? currentResumeMatches().length > 0 :
+    hasChatDirection() && conversationJobMatches().total > 0;
   state.directionBrowseActive = false;
   state.directionBrowseCriteria = null;
   $('#job-search').value = '';
@@ -988,17 +1007,100 @@ $('#member-next-action').addEventListener('click', event => {
   else if (action === 'saved' || action === 'discover') setView(action);
 });
 
+function currentResumeMatches() {
+  const byId = new Map(state.jobs.map(job => [job.id, job]));
+  return state.resumeMatches.filter(match => byId.has(match.id)).map(match => ({ match, job: byId.get(match.id) }));
+}
+
+function renderResumeCriteria(container) {
+  container.replaceChildren();
+  container.append(makeElement('span', '', 'Resume-based'),
+    makeElement('span', '', state.publicDemo ? 'Keyword matching' : 'On-device AI'));
+  const labels = [state.resumePreferences.role, state.resumePreferences.job_type,
+    state.resumePreferences.location, state.resumePreferences.workplace,
+    ...state.resumeSignals.roles.slice(0, 2), ...state.resumeSignals.skills.slice(0, 4)].filter(Boolean);
+  for (const value of [...new Set(labels)]) container.append(makeElement('span', '', value));
+}
+
+function resumeMatchSummary(count) {
+  if (count) return state.publicDemo ?
+    'Keyword-based suggestions from your resume and current public postings. These are not an AI review or an eligibility decision; check each employer’s requirements.' :
+    'On-device AI identified role and skill signals; current postings are ranked by overlap. Scores show relevance, not hiring chances. Check each employer’s requirements.';
+  return state.resumeSignals.roles.length || state.resumeSignals.skills.length ?
+    'No current public jobs matched these resume signals and any stated job-type, location, or work-setup preferences. Try a different resume or browse all jobs.' :
+    'The resume did not provide clear role or skill signals. Try a text-based resume with project or skills details.';
+}
+
+function makeResumeMatchItem(match, job) {
+  const item = makeElement('article', 'chat-match-item resume-result-item');
+  item.setAttribute('role', 'listitem');
+  const top = makeElement('div', 'chat-match-item-top');
+  top.append(makeElement('strong', '', job.company), makeElement('span', '', `Relevance ${match.score}/100`));
+  item.append(top, makeElement('h3', '', job.title),
+    makeElement('p', 'chat-match-location', `${job.location || 'Location not listed'}${job.job_type ? ` · ${job.job_type}` : ''}${job.workplace === 'Remote' ? ' · Remote' : ''}`),
+    makeElement('p', 'chat-match-reason', match.reason));
+  const link = makeElement('a', 'chat-match-link', 'View posting ↗');
+  link.href = job.url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  item.append(link);
+  return item;
+}
+
+function renderResumeResults() {
+  const list = $('#resume-results-list');
+  const criteria = $('#resume-results-signals');
+  const status = $('#resume-results-status');
+  const count = $('#resume-results-count');
+  list.replaceChildren();
+  criteria.replaceChildren();
+  count.textContent = '';
+  if (state.resumeStatus === 'idle') {
+    status.textContent = 'Add a resume above to see possible job matches here.';
+    return;
+  }
+  if (state.resumeStatus === 'loading') {
+    status.textContent = state.publicDemo ? 'Reading your resume for keyword-based suggestions…' :
+      'Reading your resume with on-device AI and checking current jobs…';
+    return;
+  }
+  if (state.resumeStatus === 'error') {
+    status.textContent = state.resumeError || 'Resume matching could not be completed.';
+    return;
+  }
+  if (jobsLoading || (!state.checkedAt && !state.jobError)) {
+    status.textContent = 'Resume matching finished. Checking the current job list…';
+    return;
+  }
+  if (state.jobError) {
+    status.textContent = 'The current job list could not be verified. No listings were created or saved from your resume.';
+    return;
+  }
+  const matches = currentResumeMatches();
+  count.textContent = `${matches.length} ${matches.length === 1 ? 'match' : 'matches'}`;
+  renderResumeCriteria(criteria);
+  status.textContent = resumeMatchSummary(matches.length);
+  for (const { match, job } of matches) list.append(makeResumeMatchItem(match, job));
+}
+
 function updateResumeUpload() {
   const active = !!state.resumeName;
-  const status = $('#resume-status');
-  const dropzone = $('#resume-dropzone');
-  $('#clear-resume').hidden = !active;
-  dropzone.classList.toggle('is-matching', state.resumeStatus === 'loading');
-  dropzone.setAttribute('aria-busy', String(state.resumeStatus === 'loading'));
-  status.hidden = !state.resumeNotice;
-  status.textContent = state.resumeNotice || '';
-  status.classList.toggle('is-error', state.resumeStatus === 'error');
-  status.classList.toggle('is-success', state.resumeStatus === 'ready' || state.resumeStatus === 'empty');
+  for (const [dropId, statusId, clearId] of [
+    ['resume-dropzone', 'resume-status', 'clear-resume'],
+    ['dashboard-resume-dropzone', 'dashboard-resume-status', 'dashboard-clear-resume'],
+    ['mini-resume-dropzone', 'mini-resume-status', 'mini-clear-resume']
+  ]) {
+    const dropzone = $(`#${dropId}`);
+    const status = $(`#${statusId}`);
+    $(`#${clearId}`).hidden = !active;
+    dropzone.classList.toggle('is-matching', state.resumeStatus === 'loading');
+    dropzone.setAttribute('aria-busy', String(state.resumeStatus === 'loading'));
+    status.hidden = !state.resumeNotice;
+    status.textContent = state.resumeNotice || '';
+    status.classList.toggle('is-error', state.resumeStatus === 'error');
+    status.classList.toggle('is-success', state.resumeStatus === 'ready' || state.resumeStatus === 'empty');
+  }
+  renderResumeResults();
 }
 
 function clearResume() {
@@ -1013,7 +1115,7 @@ function clearResume() {
   state.resumeError = '';
   state.resumeNotice = '';
   if (state.chatBrowseSource === 'resume') state.chatBrowseActive = false;
-  $('#resume-file').value = '';
+  for (const input of $$('#resume-file,#dashboard-resume-file,#mini-resume-file')) input.value = '';
   updateResumeUpload();
   renderChatMatches();
   if (state.jobs.length) renderJobs();
@@ -1033,7 +1135,8 @@ async function uploadResume(file) {
   state.resumeStatus = 'loading';
   state.resumeNotice = state.publicDemo ? `Reading ${file.name} for keyword-based job suggestions…` :
     `Reading ${file.name} and finding current jobs on this Mac…`;
-  $('#resume-file').value = '';
+  if (state.chatBrowseSource === 'resume') state.chatBrowseActive = false;
+  for (const input of $$('#resume-file,#dashboard-resume-file,#mini-resume-file')) input.value = '';
   updateResumeUpload();
   renderChatMatches();
 
@@ -1105,37 +1208,47 @@ async function uploadResume(file) {
   }
 }
 
-$('#resume-file').addEventListener('change', event => uploadResume(event.target.files[0]));
-$('#clear-resume').addEventListener('click', clearResume);
-const resumeDropzone = $('#resume-dropzone');
-resumeDropzone.addEventListener('keydown', event => {
-  if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); $('#resume-file').click(); }
-});
-resumeDropzone.addEventListener('dragover', event => {
-  event.preventDefault();
-  resumeDropzone.classList.add('is-dragging');
-});
-resumeDropzone.addEventListener('dragleave', event => {
-  if (!resumeDropzone.contains(event.relatedTarget)) resumeDropzone.classList.remove('is-dragging');
-});
-resumeDropzone.addEventListener('drop', event => {
-  event.preventDefault();
-  resumeDropzone.classList.remove('is-dragging');
-  if (event.dataTransfer.files.length > 1) {
-    state.resumeRequest++;
-    state.resumeController?.abort();
-    state.resumeController = null;
-    state.resumeName = '';
-    state.resumeMatches = [];
-    state.resumeStatus = 'error';
-    state.resumeNotice = 'Drop one resume at a time.';
-    updateResumeUpload();
-    renderChatMatches();
-    if (state.jobs.length) renderJobs();
-    return;
-  }
-  uploadResume(event.dataTransfer.files[0]);
-});
+for (const [dropId, inputId, clearId] of [
+  ['resume-dropzone', 'resume-file', 'clear-resume'],
+  ['dashboard-resume-dropzone', 'dashboard-resume-file', 'dashboard-clear-resume'],
+  ['mini-resume-dropzone', 'mini-resume-file', 'mini-clear-resume']
+]) {
+  const dropzone = $(`#${dropId}`);
+  const input = $(`#${inputId}`);
+  input.addEventListener('change', event => uploadResume(event.target.files[0]));
+  $(`#${clearId}`).addEventListener('click', clearResume);
+  dropzone.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); input.click(); }
+  });
+  dropzone.addEventListener('dragover', event => {
+    event.preventDefault();
+    dropzone.classList.add('is-dragging');
+  });
+  dropzone.addEventListener('dragleave', event => {
+    if (!dropzone.contains(event.relatedTarget)) dropzone.classList.remove('is-dragging');
+  });
+  dropzone.addEventListener('drop', event => {
+    event.preventDefault();
+    dropzone.classList.remove('is-dragging');
+    if (event.dataTransfer.files.length > 1) {
+      state.resumeRequest++;
+      state.resumeController?.abort();
+      state.resumeController = null;
+      state.resumeName = '';
+      state.resumeMatches = [];
+      state.resumeSignals = { roles: [], skills: [] };
+      state.resumeStatus = 'error';
+      state.resumeError = 'Drop one resume at a time.';
+      state.resumeNotice = state.resumeError;
+      if (state.chatBrowseSource === 'resume') state.chatBrowseActive = false;
+      updateResumeUpload();
+      renderChatMatches();
+      if (state.jobs.length) renderJobs();
+      return;
+    }
+    uploadResume(event.dataTransfer.files[0]);
+  });
+}
 
 $('#profile-form').addEventListener('submit', async event => {
   event.preventDefault();
@@ -1192,6 +1305,7 @@ async function loadJobs(force = false) {
     resetDiscoverList();
     renderJobs();
     renderSaved();
+    renderResumeResults();
     renderChatMatches();
     renderMessages();
     renderMemberProfile();
@@ -1607,6 +1721,34 @@ function renderMiniMatches() {
   list.replaceChildren();
   count.textContent = '';
   button.textContent = 'Browse all jobs →';
+  if (state.resumeName && state.resumeStatus !== 'idle') {
+    if (state.resumeStatus === 'loading') {
+      status.textContent = state.publicDemo ? 'Reading your resume for keyword-based suggestions…' :
+        'Reading your resume with on-device AI…';
+      return;
+    }
+    if (state.resumeStatus === 'error') { status.textContent = state.resumeError; return; }
+    if (jobsLoading || (!state.checkedAt && !state.jobError)) {
+      status.textContent = 'Checking current job sources for your resume matches…';
+      return;
+    }
+    if (state.jobError) { status.textContent = 'Current jobs could not be verified. Try again later.'; return; }
+    const matches = currentResumeMatches();
+    count.textContent = `${matches.length} ${matches.length === 1 ? 'match' : 'matches'}`;
+    status.textContent = resumeMatchSummary(matches.length);
+    if (matches.length) button.textContent = `See ${matches.length} resume matches →`;
+    for (const { job } of matches.slice(0, 3)) {
+      const item = makeElement('div', 'mini-chat-match');
+      item.setAttribute('role', 'listitem');
+      const link = makeElement('a', '', job.title);
+      link.href = job.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      item.append(link, makeElement('span', '', `${job.company} · ${job.location || 'Location not listed'}`));
+      list.append(item);
+    }
+    return;
+  }
   if (jobsLoading || (!state.checkedAt && !state.jobError)) {
     status.textContent = 'Checking current job sources… You can keep chatting.';
     return;
@@ -1646,7 +1788,7 @@ function renderChatMatches() {
   panel.classList.remove('is-empty');
   const rounds = state.messages.filter(item => item.role === 'user' && !isPathChoiceMessage(item)).length + Number(!!pendingChatMessage);
   const resumeActive = !!state.resumeName && state.resumeStatus !== 'idle';
-  const showPanel = !!state.chatMode && !pathChoosing && (!!rounds || resumeActive);
+  const showPanel = resumeActive || (!!state.chatMode && !pathChoosing && !!rounds);
   $('#view-chat-jobs').textContent = 'Browse jobs anytime →';
   panel.hidden = !showPanel;
   $('#onboarding-screen').classList.toggle('has-chat-matches', showPanel);
@@ -1659,7 +1801,9 @@ function renderChatMatches() {
 
   if (resumeActive) {
     if (state.resumeStatus === 'loading') {
-      $('#chat-match-status').textContent = `Reading ${state.resumeName} and matching it to current job listings with on-device AI…`;
+      $('#chat-match-status').textContent = state.publicDemo ?
+        `Reading ${state.resumeName} for keyword-based job suggestions…` :
+        `Reading ${state.resumeName} and matching it to current job listings with on-device AI…`;
       return;
     }
     if (state.resumeStatus === 'error') {
@@ -1674,36 +1818,12 @@ function renderChatMatches() {
       $('#chat-match-status').textContent = 'The current job list could not be verified. Resume matching did not create or save any listings.';
       return;
     }
-    const byId = new Map(state.jobs.map(job => [job.id, job]));
-    const matches = state.resumeMatches.filter(match => byId.has(match.id));
+    const matches = currentResumeMatches();
     $('#view-chat-jobs').textContent = matches.length ? `See ${matches.length} resume matches →` : 'Browse jobs anytime →';
-    const signalLabels = [...state.resumeSignals.roles.slice(0, 2), ...state.resumeSignals.skills.slice(0, 4)];
-    criteria.append(makeElement('span', '', 'Resume-based'), makeElement('span', '', 'On-device AI'));
-    for (const value of [state.resumePreferences.role, state.resumePreferences.job_type, state.resumePreferences.location, state.resumePreferences.workplace].filter(Boolean))
-      criteria.append(makeElement('span', '', value));
-    for (const label of signalLabels) criteria.append(makeElement('span', '', label));
+    renderResumeCriteria(criteria);
     $('#chat-match-count').textContent = `${matches.length} ${matches.length === 1 ? 'match' : 'matches'}`;
-    $('#chat-match-status').textContent = matches.length ?
-      'AI on this Mac identified the role and skill signals above; current listings are ranked by their overlap. Scores show relevance, not the chance of getting hired. Check each employer’s requirements.' :
-      state.resumeSignals.roles.length || state.resumeSignals.skills.length ?
-        'No current public jobs matched these resume signals and any explicitly stated job-type, location, or work-setup preferences. Browse all jobs or keep chatting to broaden your search.' :
-        'The resume did not provide clear role or skill signals to match. Try a text-based resume with project or skills details.';
-    for (const match of matches) {
-      const job = byId.get(match.id);
-      const item = makeElement('article', 'chat-match-item');
-      item.setAttribute('role', 'listitem');
-      const top = makeElement('div', 'chat-match-item-top');
-      top.append(makeElement('strong', '', job.company), makeElement('span', '', `Relevance ${match.score}/100`));
-      item.append(top, makeElement('h3', '', job.title),
-        makeElement('p', 'chat-match-location', `${job.location || 'Location not listed'}${job.job_type ? ` · ${job.job_type}` : ''}${job.workplace === 'Remote' ? ' · Remote' : ''}`),
-        makeElement('p', 'chat-match-reason', match.reason));
-      const link = makeElement('a', 'chat-match-link', 'View posting ↗');
-      link.href = job.url;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      item.append(link);
-      list.append(item);
-    }
+    $('#chat-match-status').textContent = resumeMatchSummary(matches.length);
+    for (const { match, job } of matches) list.append(makeResumeMatchItem(match, job));
     return;
   }
 
@@ -1946,7 +2066,7 @@ function renderJobs() {
     `No current jobs match ${state.directionBrowseActive ? 'these direction choices' : 'those details'}. Try broader preferences or show all jobs.`;
   const hasResumeMatches = state.resumeStatus === 'ready' || state.resumeStatus === 'empty';
   const suggestionText = state.directionBrowseActive || hasStructuredDirection() ? `${suggestedCount} direction matches` :
-    hasResumeMatches ? `${suggestedCount} resume-based AI suggestions` :
+    hasResumeMatches ? `${suggestedCount} resume-based ${state.publicDemo ? 'keyword' : 'AI'} suggestions` :
     state.aiMatchStatus === 'ready' ? `${suggestedCount} AI suggestions` :
     state.aiMatchStatus === 'loading' ? `${suggestedCount} keyword suggestions · AI reviewing jobs…` :
     state.aiMatchStatus === 'error' ? `${suggestedCount} keyword suggestions · AI suggestions unavailable` :
