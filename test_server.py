@@ -86,6 +86,7 @@ class LocalFlowTest(unittest.TestCase):
         self.assertIn('id="discover-eyebrow" class="eyebrow-blue">JOB MATCHING', html)
         self.assertIn('id="dashboard-greeting">Find your fit.', html)
         self.assertEqual(html.count('aria-label="Tour this site" title="Tour this site"'), 2)
+        self.assertEqual(html.count('class="guide-open-mark" aria-hidden="true">Tour</span>'), 2)
         self.assertNotIn('How it works', html)
         self.assertIn('font-weight="800" letter-spacing="-3" fill="#fff">AI</text>', html)
         self.assertIn('id="guided-chat-icon"', html)

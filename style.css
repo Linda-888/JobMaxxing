@@ -449,9 +449,9 @@ body.public-demo .logout-button,body.public-demo .account-chip{display:none!impo
 #guide-back{border:0;background:transparent;color:#637c9f;font-size:12px;font-weight:750;padding:10px 0}
 #guide-next{min-width:118px;justify-content:center;margin-left:auto;padding:10px 14px;font-size:12px}
 @media(max-width:650px){
-  .guide-open{display:grid;place-items:center;width:30px;height:30px;padding:0}
+  .guide-open{display:grid;place-items:center;width:44px;height:30px;padding:0}
   .guide-open-text{display:none}
-  .guide-open-mark{display:block;font-size:16px}
+  .guide-open-mark{display:block;font-size:10px}
   .dashboard-top .guide-open{margin-right:11px}
   .dashboard-top .guide-open{width:auto;min-width:49px;padding:0 7px}
   .dashboard-top .guide-open-text{display:block;font-size:10px}
