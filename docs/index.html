@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore public job postings, match resume text, and save opportunities with JobMaxxing. This GitHub Pages edition runs in your browser.">
+  <meta name="theme-color" content="#1558d6">
+  <title>JobMaxxing · Find Your Next Move</title>
+  <link rel="stylesheet" href="styles.css?v=1">
+  <script src="matching.js?v=1" defer></script>
+  <script src="app.js?v=1" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="JobMaxxing home"><span class="brand-mark">J<span>✦</span></span><span>JobMaxxing</span></a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="#discover">Discover jobs</a>
+      <a id="resume-nav" href="#resume">Resume matching</a>
+      <a id="saved-nav" href="#saved">Saved jobs <span id="saved-count">0</span></a>
+    </nav>
+    <button id="tour-open" class="tour-open" type="button">Tour this site</button>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <span class="eyebrow">JOB MATCHING · GITHUB PAGES EDITION</span>
+        <h1 id="hero-title">Find your fit.<br><span>Make your next move.</span></h1>
+        <p>Explore public jobs, narrow down what matters to you, and keep the roles worth a closer look.</p>
+        <div class="hero-actions"><a class="button button-light" href="#discover">Browse jobs <span aria-hidden="true">→</span></a><a class="button button-ghost" href="#resume">Match resume text <span aria-hidden="true">↗</span></a></div>
+      </div>
+      <div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><span class="hero-star">✦</span><span class="hero-chip chip-one">Find direction</span><span class="hero-chip chip-two">Explore roles ↗</span></div>
+    </section>
+
+    <div class="container">
+      <section class="edition-note" aria-label="About this edition">
+        <span class="note-icon" aria-hidden="true">ℹ</span>
+        <p><strong>Browser-only edition.</strong> This site does not use Render or ask you to sign in. It shows a regularly generated snapshot of public employer listings. Search, text-resume matching, and saved jobs run in your browser. AI chat and PDF/DOCX upload are not available here.</p>
+      </section>
+
+      <section id="discover" class="section" aria-labelledby="discover-title">
+        <div class="section-heading"><div><span class="section-kicker">01 / DISCOVER</span><h2 id="discover-title">Opportunities worth exploring.</h2><p>Search by role, employer, or city. Check the original posting before applying.</p></div><span class="section-spark" aria-hidden="true">✦</span></div>
+        <div class="search-panel">
+          <label id="search-target" class="search-field"><span aria-hidden="true">⌕</span><span class="sr-only">Search jobs</span><input id="search" type="search" placeholder="Role, employer, or city" autocomplete="off"></label>
+          <label class="filter-field"><span>Job type</span><select id="type-filter"><option value="">All types</option><option>Internship</option><option>Full-time</option><option>Part-time</option><option>Fellowship</option><option>Contract</option></select></label>
+          <label class="filter-field"><span>Work setup</span><select id="workplace-filter"><option value="">Any setup</option><option>Remote</option><option>Hybrid</option><option>On-site</option></select></label>
+          <label class="early-field"><input id="early-filter" type="checkbox"> Internships & early career</label>
+        </div>
+        <div class="suggestion-row"><span>Try a direction:</span><button data-query="software engineer" type="button">Software</button><button data-query="design" type="button">Design</button><button data-query="data" type="button">Data</button><button data-query="research" type="button">Research</button><button data-query="marketing" type="button">Marketing</button></div>
+        <div id="match-filter-banner" class="match-filter-banner" hidden><span>Showing jobs related to your resume text.</span><button id="clear-match-filter" type="button">Show all jobs</button></div>
+        <div class="results-top"><strong id="results-count">Loading public jobs…</strong><span id="snapshot-status" role="status">Checking the latest published snapshot…</span></div>
+        <div id="job-list" class="job-grid" aria-live="polite"></div>
+        <button id="show-more" class="button button-outline show-more" type="button" hidden>Show more jobs ↓</button>
+        <p class="section-foot">A listing in this snapshot may close or change. The employer posting is the source of truth.</p>
+      </section>
+
+      <section id="resume" class="section resume-section" aria-labelledby="resume-title">
+        <div class="section-heading"><div><span class="section-kicker">02 / MATCH</span><h2 id="resume-title">Start with your resume.</h2><p>No conversation needed. This edition matches words in your resume to the public job snapshot.</p></div></div>
+        <div class="resume-layout">
+          <div class="resume-card">
+            <span class="card-eyebrow">PRIVATE · IN YOUR BROWSER</span>
+            <h3>Paste text or choose a TXT file</h3>
+            <p>Your resume text is not uploaded, saved, or sent to an AI service. This is keyword-based relevance, not a hiring or eligibility prediction.</p>
+            <label id="resume-target" class="file-drop" for="resume-file" tabindex="0"><input id="resume-file" class="sr-only" type="file" accept=".txt,text/plain"><span class="drop-icon" aria-hidden="true">⇧</span><span><strong>Drop a TXT resume here</strong><small>or click to choose a .txt file · max 5 MB</small></span></label>
+            <label class="paste-label" for="resume-text">Or paste resume text</label>
+            <textarea id="resume-text" rows="7" maxlength="30000" autocomplete="off" placeholder="Paste skills, projects, experience, and the kinds of roles you want…"></textarea>
+            <div class="resume-actions"><button id="match-resume" class="button button-primary" type="button">Find related jobs <span aria-hidden="true">→</span></button><button id="clear-resume" class="button button-quiet" type="button">Clear resume</button></div>
+            <p id="resume-status" class="resume-status" role="status"></p>
+            <p class="format-note">PDF and DOCX files cannot be read by this static edition. Copy their text into the box above, or export to TXT first.</p>
+          </div>
+          <div class="match-card"><span class="card-eyebrow">YOUR MATCHES</span><h3>Related public jobs</h3><p id="match-intro">Add resume text to see suggestions here.</p><div id="match-signals" class="signal-list"></div><div id="match-list" class="match-list"></div><button id="browse-matches" class="button button-outline" type="button" hidden>See these jobs in Discover →</button></div>
+        </div>
+      </section>
+
+      <section id="saved" class="section" aria-labelledby="saved-title">
+        <div class="section-heading"><div><span class="section-kicker">03 / KEEP</span><h2 id="saved-title">Your shortlist.</h2><p>Save a role while browsing and come back to it on this device.</p></div></div>
+        <p class="saved-note">Saved jobs stay only in this browser. They may disappear if you clear site data, and a saved posting may no longer be open.</p>
+        <div id="saved-list" class="job-grid"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer"><span>JobMaxxing · Find your next move</span><span>Public employer listings · verify details with the employer</span><a href="https://github.com/Linda-888/JobMaxxing" target="_blank" rel="noopener noreferrer">Source on GitHub ↗</a></footer>
+
+  <div id="tour" class="tour" hidden><div class="tour-card" role="dialog" aria-labelledby="tour-title" aria-describedby="tour-description"><div class="tour-top"><span>JOBMAXXING GUIDE</span><button id="tour-skip" type="button">Skip</button></div><p id="tour-step">Step 1 of 3</p><h2 id="tour-title" tabindex="-1">Search jobs</h2><p id="tour-description"></p><div class="tour-actions"><button id="tour-back" type="button">Back</button><button id="tour-next" class="button button-primary" type="button">Next →</button></div></div></div>
+  <noscript><p class="noscript">JobMaxxing's GitHub Pages edition needs JavaScript for search and matching.</p></noscript>
+</body>
+</html>

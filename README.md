@@ -1,6 +1,10 @@
 # JobMaxxing
 
-[Open the live guest demo](https://jobmaxxing-linda.onrender.com/)
+[Open the GitHub Pages edition](https://linda-888.github.io/JobMaxxing/)
+
+The GitHub Pages edition runs without Render or a Python server. It provides a twice-daily snapshot of public employer listings, browser-based search and filters, TXT/pasted-resume keyword matching, saved jobs in this browser, and a short site tour. It does **not** provide AI chat, online accounts, or PDF/DOCX upload. Resume text stays in the browser and is not saved or uploaded. The employer posting is still the source of truth. `export_static_jobs.py` builds `docs/jobs.json` from the employer boards, excluding the rate-limited Remotive API; `.github/workflows/pages.yml` refreshes and publishes it twice daily and on pushes to `main`.
+
+The original Python app remains available as a [guest demo](https://jobmaxxing-linda.onrender.com/), but the GitHub Pages edition does not depend on it. To run the full local app with on-device AI, follow the instructions below.
 
 The intended outcome is that a student can have a short career conversation, find several potentially relevant openings, and see where each listing came from and when it was checked. This is a small public-employer-feed prototype, not a complete Handshake replacement.
 
@@ -10,7 +14,7 @@ Run `python3 server.py` from this directory and open `http://127.0.0.1:8765/`.
 
 The `render.yaml` Blueprint runs a guest-only version on Render. It has current public job feeds, guided career chat, browser-only saved jobs, and keyword-based resume suggestions. It does **not** offer live AI or online accounts. PDF, DOCX, and TXT resumes are briefly read in server memory for keyword matching; the files are not saved. The public demo does not load the local `.env`, account database, or Ollama model. The local version below retains its AI and account features.
 
-The public demo is deployed at [jobmaxxing-linda.onrender.com](https://jobmaxxing-linda.onrender.com/). Render's free service can take about a minute to wake after inactivity. In a fresh browser, complete or skip the guide, chat, browse jobs, save one, and upload a non-personal test resume. Do not use a GitHub Pages URL for the app: Pages cannot run its Python API.
+The Python guest demo is deployed at [jobmaxxing-linda.onrender.com](https://jobmaxxing-linda.onrender.com/). Render's free service can take about a minute to wake after inactivity. In a fresh browser, complete or skip the guide, chat, browse jobs, save one, and upload a non-personal test resume. GitHub Pages cannot run the Python API; its separate browser-only edition is described above.
 
 The first visit in a browser opens a four-step guide that points to the career chat bubble, the standalone Resume matching upload area, job search and filters, and Saved jobs. The guide moves to the relevant screen for each step, then returns visitors to their original screen and scroll position when they finish, skip, or press Escape. **Skip** is available at every step. Finishing or skipping is remembered in that browser; **Tour this site** in the header opens the guide again.
 
