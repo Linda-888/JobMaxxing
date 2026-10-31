@@ -149,8 +149,16 @@ def resume_evidence(resume_text):
     for raw in re.split(r"\n+|(?<=[.!?])\s+(?=[A-Z])", resume_text):
         line = re.sub(r"^[\s•●*\-–]+", "", raw).strip()
         line = _CONTACT.sub("", line).strip(" ,;-·")
-        if _SECTION.fullmatch(line) or _SEEKING.match(line):
+        if _SECTION.fullmatch(line):
             continue
+        # A summary can mix a career goal with real experience (for example,
+        # "CS student seeking a software internship"). Keep any evidence
+        # before the goal, but never let the desired job title count as proof.
+        intent = _SEEKING.search(line)
+        if intent:
+            line = line[:intent.start()].strip(" ,;:-")
+            if not line:
+                continue
         words = re.findall(r"[A-Za-z][A-Za-z+#.-]*", line)
         if (len(words) < 4 or len(line) < 22) and not (
                 len(words) >= 2 and len(line) >= 12 and _SHORT_EVIDENCE.search(line)):

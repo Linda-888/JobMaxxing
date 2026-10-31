@@ -19,6 +19,15 @@ class EvidenceTest(unittest.TestCase):
         self.assertEqual(matcher.resume_evidence(text),
                          ["Built dashboards with SQL to explain customer retention."])
 
+    def test_aspiration_inside_summary_does_not_outweigh_project_evidence(self):
+        text = ("Computer science student seeking a software engineering internship.\n"
+                "Built a scheduling app with Python and SQL to help students reserve study rooms.\n"
+                "Developed backend APIs and automated tests for the project.")
+        self.assertEqual(matcher.resume_evidence(text), [
+            "Built a scheduling app with Python and SQL to help students reserve study rooms.",
+            "Developed backend APIs and automated tests for the project.",
+        ])
+
     def test_empty_or_goal_only_resume_is_not_ranked(self):
         result = matcher.match_resume_to_jobs("Seeking a software engineering internship.",
                                               [job("eng", "Software Engineer Intern", "Build APIs")],
