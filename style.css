@@ -512,6 +512,13 @@ body.public-demo .logout-button,body.public-demo .account-chip{display:none!impo
 .mini-resume-feedback{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .mini-resume-feedback .resume-status{min-width:0;margin-top:4px;font-size:9px;line-height:1.35}
 .mini-resume-feedback .resume-clear{flex:0 0 auto;padding:3px 1px;font-size:9px}
+.resume-status.is-loading,#resume-results-status.is-loading,.chat-match-status.is-loading,#mini-chat-match-status.is-loading{display:inline-flex;align-items:center;gap:8px;width:fit-content;max-width:100%;padding:6px 10px;border:1px solid #cfe1fa;border-radius:999px;background:#edf5ff;color:#24578f;font-size:12px!important;font-weight:750;line-height:1.3}
+.resume-analysis-spinner{position:relative;display:grid;place-items:center;flex:0 0 19px;width:19px;height:19px;color:#1d68c7}
+.resume-analysis-spinner::before{position:absolute;inset:0;border:2px solid #bfd6f2;border-top-color:#1d68c7;border-right-color:#1d68c7;border-radius:50%;content:"";animation:resume-analysis-spin .85s linear infinite}
+.resume-analysis-spinner svg{display:block;width:10px;height:10px;overflow:visible;fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:1.6}
+.resume-analysis-copy{min-width:0}
+@keyframes resume-analysis-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.resume-analysis-spinner::before{animation:none;border-color:#1d68c7}}
 @media(max-width:960px){
   .resume-match-card{grid-template-columns:minmax(0,1fr) minmax(200px,43%);padding:12px}
   .resume-match-copy p{font-size:10px}

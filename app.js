@@ -1049,6 +1049,29 @@ function resumeMatchSummary(count) {
     'The resume did not provide clear role or skill signals. Try a text-based resume with project or skills details.';
 }
 
+function setResumeStatus(status, message, loading = false) {
+  status.classList.toggle('is-loading', loading);
+  if (!loading) {
+    status.textContent = message;
+    return;
+  }
+
+  const spinner = makeElement('span', 'resume-analysis-spinner');
+  spinner.setAttribute('aria-hidden', 'true');
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('viewBox', '0 0 16 16');
+  icon.setAttribute('focusable', 'false');
+  const lens = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  lens.setAttribute('cx', '6.5');
+  lens.setAttribute('cy', '6.5');
+  lens.setAttribute('r', '4');
+  const handle = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  handle.setAttribute('d', 'm9.5 9.5 4 4');
+  icon.append(lens, handle);
+  spinner.append(icon);
+  status.replaceChildren(spinner, makeElement('span', 'resume-analysis-copy', message));
+}
+
 function makeResumeMatchItem(match, job) {
   const item = makeElement('article', 'chat-match-item resume-result-item');
   item.setAttribute('role', 'listitem');
@@ -1074,24 +1097,23 @@ function renderResumeResults() {
   criteria.replaceChildren();
   count.textContent = '';
   if (state.resumeStatus === 'idle') {
-    status.textContent = 'Add a resume above to see possible job matches here.';
+    setResumeStatus(status, 'Add a resume above to see possible job matches here.');
     return;
   }
   if (state.resumeStatus === 'loading') {
-    status.textContent = state.publicDemo ? 'Analyzing your experience with private AI and checking current jobs…' :
-      'Reading your resume with on-device AI and checking current jobs…';
+    setResumeStatus(status, 'AI is analysing your resume and finding relevant jobs…', true);
     return;
   }
   if (state.resumeStatus === 'error') {
-    status.textContent = state.resumeError || 'Could not match this resume.';
+    setResumeStatus(status, state.resumeError || 'Could not match this resume.');
     return;
   }
   if (jobsLoading || (!state.checkedAt && !state.jobError)) {
-    status.textContent = 'Resume checked. Checking the current job list…';
+    setResumeStatus(status, 'Resume checked. Checking the current job list…');
     return;
   }
   if (state.jobError) {
-    status.textContent = 'The current job list could not be verified. No listings were created or saved from your resume.';
+    setResumeStatus(status, 'The current job list could not be verified. No listings were created or saved from your resume.');
     return;
   }
   const matches = currentResumeMatches();
@@ -1114,7 +1136,8 @@ function updateResumeUpload() {
     dropzone.classList.toggle('is-matching', state.resumeStatus === 'loading');
     dropzone.setAttribute('aria-busy', String(state.resumeStatus === 'loading'));
     status.hidden = !state.resumeNotice;
-    status.textContent = state.resumeNotice || '';
+    setResumeStatus(status, state.resumeStatus === 'loading' ? 'AI is analysing your resume…' : state.resumeNotice || '',
+      state.resumeStatus === 'loading');
     status.classList.toggle('is-error', state.resumeStatus === 'error');
     status.classList.toggle('is-success', state.resumeStatus === 'ready' || state.resumeStatus === 'empty');
   }
@@ -1738,11 +1761,11 @@ function renderMiniMatches() {
   const button = $('#mini-chat-view-jobs');
   list.replaceChildren();
   count.textContent = '';
+  status.classList.remove('is-loading');
   button.textContent = 'Browse all jobs →';
   if (state.resumeName && state.resumeStatus !== 'idle') {
     if (state.resumeStatus === 'loading') {
-      status.textContent = state.publicDemo ? 'Analyzing your experience with private AI…' :
-        'Reading your resume with on-device AI…';
+      setResumeStatus(status, 'AI is analysing your resume…', true);
       return;
     }
     if (state.resumeStatus === 'error') { status.textContent = state.resumeError; return; }
@@ -1803,6 +1826,8 @@ function renderChatMatches() {
   renderMiniMatches();
   const panel = $('#chat-match-panel');
   if (!panel) return;
+  const matchStatus = $('#chat-match-status');
+  matchStatus.classList.remove('is-loading');
   panel.classList.remove('is-empty');
   const rounds = state.messages.filter(item => item.role === 'user' && !isPathChoiceMessage(item)).length + Number(!!pendingChatMessage);
   const resumeActive = !!state.resumeName && state.resumeStatus !== 'idle';
@@ -1820,9 +1845,7 @@ function renderChatMatches() {
 
   if (resumeActive) {
     if (state.resumeStatus === 'loading') {
-      $('#chat-match-status').textContent = state.publicDemo ?
-        `Analyzing ${state.resumeName} with private AI…` :
-        `Reading ${state.resumeName} and matching it to current job listings with on-device AI…`;
+      setResumeStatus(matchStatus, 'AI is analysing your resume and finding relevant jobs…', true);
       return;
     }
     if (state.resumeStatus === 'error') {
