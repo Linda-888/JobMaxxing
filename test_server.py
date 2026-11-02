@@ -939,6 +939,8 @@ class RecommendationTest(unittest.TestCase):
         self.assertFalse(sent["store"])
         self.assertEqual(sent["text"]["format"]["type"], "json_schema")
         candidates = json.loads(sent["input"][0]["content"])["jobs"]
+        self.assertEqual(json.loads(sent["input"][0]["content"])["output_language"], "English")
+        self.assertIn("Write every reason in English", sent["instructions"])
         self.assertNotIn("url", candidates[0])
         self.assertNotIn("early_career", candidates[0])
 
