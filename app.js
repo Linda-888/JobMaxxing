@@ -87,8 +87,8 @@ function rememberGuide() {
 function renderGuide() {
   const step = guideSteps[guideStep];
   $('#guide-step-label').textContent = `Step ${guideStep + 1} of ${guideSteps.length}`;
-  $('#guide-title').textContent = state.publicDemo && guideStep === 0 ? 'Career chat' : step.title;
-  $('#guide-description').textContent = state.publicDemo && guideStep === 0 ?
+  $('#guide-title').textContent = state.publicDemo && !state.ai && guideStep === 0 ? 'Career chat' : step.title;
+  $('#guide-description').textContent = state.publicDemo && !state.ai && guideStep === 0 ?
     'This bubble opens a guided career conversation. Tell us what interests you to see possible jobs.' :
     state.publicDemo && guideStep === 1 ?
       'Open Resume Maxxing here to upload a PDF, DOCX, or TXT. Private AI compares your experience with current jobs, then discards the file; chat is optional.' : step.description;
@@ -261,8 +261,10 @@ function updateIdentity() {
   }
   const local = state.aiProvider === 'local';
   const chatMode = state.ai ?
-    (state.aiVerified ? (local ? 'Local AI connected · tailored conversation' : 'AI connected · tailored follow-up questions') :
-      (local ? 'Local AI model ready · testing on first message' : 'AI key configured · testing on first request')) :
+    (state.aiVerified ? (local ? 'Local AI connected · tailored conversation' :
+      state.publicDemo ? 'GPT-6 Luna · AI connected' : 'AI connected · tailored follow-up questions') :
+      (local ? 'Local AI model ready · testing on first message' :
+        state.publicDemo ? 'GPT-6 Luna · testing on first request' : 'AI key configured · testing on first request')) :
     'Guided preview · AI not connected';
   $('#chat-mode').textContent = chatMode;
   $('#mini-chat-mode').textContent = chatMode;
@@ -282,6 +284,7 @@ function updateIdentity() {
   });
   const disclosure = local ?
     (state.user ? 'AI runs on this Mac · chat saved to your local account' : 'AI runs on this Mac · chat saved on this device') :
+    state.publicDemo && state.ai ? 'GPT-6 Luna · chat and direction sent to OpenAI · saved in this browser' :
     state.ai ?
     (state.user ? 'Chat is saved to your account · sent to OpenAI' : 'Saved on this device · sent to OpenAI') :
     (state.user ? 'Saved to your account · guided preview' : 'Saved on this device · guided preview');

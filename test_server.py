@@ -224,6 +224,42 @@ class LocalFlowTest(unittest.TestCase):
             self.assertEqual(status, 200)
             fetch.assert_called_with(False)
 
+    def test_public_demo_uses_luna_for_guest_chat_without_exposing_the_key(self):
+        model_reply = {"output": [{"content": [{"type": "output_text", "text": json.dumps({
+            "reply": "Look at software internships in the job list.",
+            "profile": {"role": "software internship", "skills": "Python", "location": "", "priorities": ""}
+        })}]}]}
+        with patch.object(server, "PUBLIC_DEMO", True), \
+                patch.dict(os.environ, {"OPENAI_API_KEY": "private-test-key", "OPENAI_MODEL": "gpt-4o-mini"}), \
+                patch.object(server, "fetch_json", return_value=model_reply) as fetch, \
+                patch.object(server, "public_ai_usage", {"day": None, "daily_count": 0, "hour": None, "visitors": {}}):
+            chat = {"message": "I want a software internship and have used Python.",
+                    "profile": server.EMPTY_PROFILE, "messages": []}
+            status, result = self.request("/api/guest/chat", chat, origin=self.base)
+            self.assertEqual((status, result["error"]), (403, "Reload the website before using AI features."))
+            status, session = self.request("/api/session")
+            self.assertEqual((status, session["ai_provider"], session["public_demo"]), (200, "openai", True))
+            self.assertNotIn("private-test-key", json.dumps(session))
+            status, result = self.request("/api/guest/chat", chat, origin=self.base)
+            self.assertEqual((status, result["mode"], result["ai_provider"]), (200, "ai", "openai"))
+            self.assertEqual(result["profile"]["skills"], "Python")
+            sent = json.loads(fetch.call_args.kwargs["data"])
+            self.assertEqual(sent["model"], "gpt-6-luna")
+            self.assertEqual(sent["reasoning"], {"effort": "low"})
+            self.assertFalse(sent["store"])
+            self.assertNotIn("private-test-key", json.dumps(result))
+            with patch.object(server, "recommend_jobs", return_value={"matches": []}) as rank:
+                status, ranked = self.request("/api/recommendations", {"profile": result["profile"]}, origin=self.base)
+            self.assertEqual((status, ranked), (200, {"matches": []}))
+            rank.assert_called_once_with(result["profile"])
+
+    def test_public_ai_capacity_limits_daily_calls(self):
+        with patch.object(server, "public_ai_usage", {"day": None, "daily_count": 0, "hour": None, "visitors": {}}), \
+                patch.object(server, "PUBLIC_AI_DAILY_LIMIT", 1):
+            self.assertIsNone(server.reserve_public_ai_call("test-visitor", "chat"))
+            server.public_ai_slots.release()
+            self.assertIn("capacity", server.reserve_public_ai_call("other-visitor", "chat"))
+
     def test_exploration_path_keeps_interests_open_and_account_choice_persists(self):
         status, guest = self.request("/api/guest/chat", {
             "message": "I like helping people, but have no idea what job I want.",
