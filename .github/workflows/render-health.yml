@@ -1,0 +1,31 @@
+name: Keep JobMaxxing reachable
+
+on:
+  schedule:
+    # Render's free instance sleeps after 15 minutes without traffic.
+    - cron: '7,17,27,37,47,57 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check the public homepage
+        env:
+          SITE_URL: https://jobmaxxing-linda.onrender.com/
+        run: |
+          for attempt in 1 2 3; do
+            status=$(curl --silent --show-error --location --max-time 45 \
+              --output /dev/null --write-out '%{http_code}' "$SITE_URL") || status=000
+            if [ "$status" = "200" ]; then
+              echo "JobMaxxing homepage responded with HTTP 200."
+              exit 0
+            fi
+            echo "Attempt $attempt returned HTTP $status."
+            if [ "$attempt" -lt 3 ]; then sleep 10; fi
+          done
+          exit 1
