@@ -11,7 +11,8 @@ class StaticExportTest(unittest.TestCase):
     def test_export_excludes_rate_limited_source_and_reduces_fields(self):
         sources = (("greenhouse", "example", "Example"), ("remotive", "remote-jobs", "Remotive"))
         job = {"id": "example:1", "title": "Design Intern", "url": "https://example.com/job",
-               "company": "Example", "summary": "Design experiences", "secret_extra": "not exported"}
+               "company": "Example", "summary": "Design experiences", "degree_levels": ["graduate"],
+               "secret_extra": "not exported"}
 
         def fake_fetch(*, force):
             self.assertTrue(force)
@@ -22,6 +23,7 @@ class StaticExportTest(unittest.TestCase):
             result = build_snapshot(fake_fetch)
             self.assertEqual(server.JOB_SOURCES, sources)
         self.assertEqual(result["jobs"][0]["title"], "Design Intern")
+        self.assertEqual(result["jobs"][0]["degree_levels"], ["graduate"])
         self.assertNotIn("secret_extra", result["jobs"][0])
 
     def test_empty_feed_does_not_replace_published_site(self):

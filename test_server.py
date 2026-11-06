@@ -10,6 +10,7 @@ import tempfile
 import threading
 import unittest
 import zipfile
+from datetime import date
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import HTTPCookieProcessor, Request, build_opener
@@ -578,6 +579,22 @@ class LocalFlowTest(unittest.TestCase):
         self.assertEqual(profile["role"], "software engineering internship")
         self.assertEqual((mode, provider), ("ai", "local"))
 
+    def test_phd_resume_can_consider_phd_internships(self):
+        jobs = [
+            {"id": "figma:1", "title": "Software Engineering Intern", "job_type": "Internship", "location": "Remote"},
+            {"id": "figma:2", "title": "PhD Software Engineering Intern", "job_type": "Internship", "location": "Remote"},
+        ]
+        with patch.object(server, "fetch_jobs", return_value={"jobs": jobs}), \
+                patch.object(server, "extract_resume_profile", return_value={"roles": [], "skills": []}), \
+                patch.object(server.semantic_matcher, "match_resume_to_jobs",
+                             return_value={"matches": [], "roles": []}) as matcher:
+            server.recommend_jobs_from_resume("Undergraduate student seeking a software engineering internship.")
+            undergraduate_ids = [job["id"] for job in matcher.call_args.args[1]]
+            server.recommend_jobs_from_resume("PhD candidate in CS seeking a software engineering internship.")
+            phd_ids = [job["id"] for job in matcher.call_args.args[1]]
+        self.assertEqual(undergraduate_ids, ["figma:1"])
+        self.assertEqual(phd_ids, ["figma:1", "figma:2"])
+
     def test_resume_rejects_skills_not_actually_evidenced(self):
         resume = "Undergraduate student seeking a product design internship in San Francisco. Figma and user research projects."
         model = {"message": {"content": json.dumps({"roles": ["product design"], "skills": [
@@ -697,6 +714,7 @@ class JobFeedTest(unittest.TestCase):
                          ("figma:42", "Internship", "Remote"))
         self.assertTrue(greenhouse["early_career"])
         self.assertEqual(greenhouse["class_years"], ["sophomore", "junior", "senior"])
+        self.assertEqual(greenhouse["degree_levels"], ["undergraduate"])
         self.assertIn("rising sophomores", greenhouse["year_evidence"])
         self.assertEqual(greenhouse["eligibility_preview"], greenhouse["year_evidence"])
         self.assertIn("content=true", server.source_url("greenhouse", "figma"))
@@ -785,6 +803,50 @@ class JobFeedTest(unittest.TestCase):
         self.assertEqual(server.internship_class_years("First-year college student welcome.")[0], ["freshman"])
         self.assertEqual(server.internship_class_years("Rising freshman or sophomore in college.")[0],
                          ["freshman", "sophomore"])
+
+    def test_internship_eligibility_maps_graduation_years_and_degree_levels(self):
+        as_of = date(2026, 11, 6)
+        cases = (
+            ("Expected graduation in 2027.", "Software Engineer Intern", ["senior"], ["undergraduate"]),
+            ("Class of 2027 applicants may apply.", "Design Intern", ["senior"], ["undergraduate"]),
+            ("Pursuing a bachelor's degree with expected graduation Fall 2027 or Spring 2028.",
+             "Illustrator Intern", ["junior", "senior"], ["undergraduate"]),
+            ("Expected graduation between 2027 and 2029.", "Engineering Intern",
+             ["sophomore", "junior", "senior"], ["undergraduate"]),
+            ("Expected graduation in 2027 or later.", "Engineering Intern",
+             ["freshman", "sophomore", "junior", "senior"], ["undergraduate"]),
+            ("Pursuing an Undergraduate or Masters degree with expected graduation Fall 2027 or Spring 2028.",
+             "Data Science Intern", ["junior", "senior"], ["undergraduate", "graduate"]),
+            ("Pursuing a Master's degree with expected graduation in 2027.",
+             "Data Science Intern", [], ["graduate"]),
+            ("Pursuing a PhD with expected graduation in 2027.", "Research Intern", [], ["phd"]),
+            ("Current 4th year senior PhD student required.", "PhD Intern", [], ["phd"]),
+            ("Graduate students may apply.", "Research Intern", [], ["graduate", "phd"]),
+            ("Master's degree preferred; Bachelor's degree required.", "Research Intern",
+             [], ["undergraduate"]),
+            ("Summer 2027 internship on the design team.", "Design Intern", [], []),
+        )
+        for description, title, expected_years, expected_levels in cases:
+            with self.subTest(description=description, title=title):
+                years, levels, evidence = server.internship_student_eligibility(
+                    description, title=title, as_of=as_of)
+                self.assertEqual(years, expected_years)
+                self.assertEqual(levels, expected_levels)
+                if expected_years or expected_levels:
+                    self.assertTrue(evidence)
+        self.assertEqual(server.internship_student_eligibility(
+            "Current 4th year senior PhD student required.", title="Research Intern", as_of=as_of)[0], [])
+        self.assertEqual(server.internship_student_eligibility(
+            "Work alongside PhD researchers.", title="Research Intern", as_of=as_of)[1], [])
+        self.assertEqual(server.internship_student_eligibility(
+            "You will mentor PhD students.", title="Research Intern", as_of=as_of)[1], [])
+        self.assertEqual(server.undergraduate_year_for_graduation(2027, date(2027, 4, 1)), "senior")
+
+    def test_direction_accepts_graduate_and_phd_internships(self):
+        for stage in ("graduate", "phd"):
+            with self.subTest(stage=stage):
+                selected = server.safe_direction({"job_type": "Internship", "school_year": stage})
+                self.assertEqual(selected["school_year"], stage)
 
     def test_partial_failure_keeps_other_sources_and_short_cache(self):
         def first_fetch(source):

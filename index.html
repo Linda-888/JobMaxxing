@@ -7,8 +7,8 @@
   <meta name="description" content="JobMaxxing: a more personal way to find your next opportunity.">
   <title>JobMaxxing · Find Your Next Move</title>
   <link rel="stylesheet" href="style.css?v=20261030-full-chat-1">
-  <script src="direction_matcher.js?v=20261023-direction-2" defer></script>
-  <script src="app.js?v=20261101-luna-1" defer></script>
+  <script src="direction_matcher.js?v=20261106-stage-1" defer></script>
+  <script src="app.js?v=20261106-stage-1" defer></script>
 </head>
 <body>
   <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
@@ -118,7 +118,7 @@
         <div id="chat-browse-banner" class="chat-browse-banner" hidden><span id="chat-browse-summary">Showing jobs based on your conversation</span><button id="clear-chat-browse" type="button">Show all jobs</button></div>
         <div class="results-toolbar"><div class="toolbar-left"><label class="search-box"><span>⌕</span><input id="job-search" type="search" placeholder="Role, employer, or city" aria-label="Search jobs by role, employer, or city"></label><button id="open-job-filters" class="outline-button filter-button" type="button">Filters <span id="filter-count" aria-hidden="true"></span></button></div><button id="refresh-jobs" class="outline-button" type="button" aria-label="Refresh jobs"><span class="refresh-icon" aria-hidden="true">↻</span><span class="refresh-label">Refresh jobs</span></button></div>
         <div class="job-category-bar"><strong>Browse by job type</strong><div id="job-categories" class="job-categories" role="group" aria-label="Job type categories"></div></div>
-        <div id="internship-years" class="internship-years" hidden><strong>Possible internships by year in school</strong><div id="year-categories" class="job-categories" role="group" aria-label="Internship student-year categories"></div><p id="year-guidance">Only employer-stated years are marked. Listings without a stated year remain available; check the posting before applying.</p></div>
+        <div id="internship-years" class="internship-years" hidden><strong>Possible internships by student stage</strong><div id="year-categories" class="job-categories" role="group" aria-label="Internship student-stage categories"></div><p id="year-guidance">Graduation-year and degree requirements are checked when stated. Confirm eligibility with the employer.</p></div>
         <div class="results-meta"><span id="results-count" tabindex="-1">Finding jobs…</span><span id="source-status">Connecting to job sources…</span></div>
         <p id="salary-filter-status" class="salary-filter-status" role="status" hidden></p>
         <div id="job-cards" class="job-list" role="list" aria-label="Job results"></div>
@@ -171,7 +171,7 @@
           <div class="direction-section-title"><strong>Practical preferences</strong><span>Unknown details stay visible but are clearly flagged</span></div>
           <div class="profile-form-grid direction-select-grid">
             <label>Job type<select name="job_type"><option value="">Any job type</option><option>Internship</option><option>Full-time</option><option>Part-time</option><option>Fellowship</option><option>Contract</option></select></label>
-            <label>Year in school<select name="school_year"><option value="">Any year / not applicable</option><option value="freshman">Freshman</option><option value="sophomore">Sophomore</option><option value="junior">Junior</option><option value="senior">Senior</option></select></label>
+            <label>Student stage for internships<select name="school_year"><option value="">Any stage / not applicable</option><option value="freshman">Freshman</option><option value="sophomore">Sophomore</option><option value="junior">Junior</option><option value="senior">Senior</option><option value="graduate">Graduate / Master’s</option><option value="phd">PhD</option></select></label>
             <label>Work setup<select name="workplace"><option value="">Any setup</option><option>Remote</option><option>Hybrid</option><option>On-site</option></select></label>
             <label>Location preference<select name="location_rule"><option value="prefer">Prefer this location</option><option value="only">Only this location</option><option value="any">Anywhere</option></select></label>
             <label>Minimum expected pay (USD)<input name="salary_min" type="number" min="0" max="10000000" step="0.01" inputmode="decimal" placeholder="Optional"></label>

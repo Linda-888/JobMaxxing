@@ -473,7 +473,10 @@ function renderMemberProfile() {
   directionTags.replaceChildren();
   const choices = [
     ...state.direction.activities.map(activity => activityLabels[activity]),
-    state.direction.job_type, state.direction.school_year ? `${state.direction.school_year} year` : '',
+    state.direction.job_type, state.direction.school_year ?
+      (['graduate', 'phd'].includes(state.direction.school_year) ?
+        (state.direction.school_year === 'phd' ? 'PhD' : 'Graduate / Master’s') :
+        `${state.direction.school_year} year`) : '',
     state.direction.workplace,
     state.direction.salary_min ? `From $${state.direction.salary_min.toLocaleString()}/${state.direction.salary_period}` : ''
   ].filter(Boolean);
@@ -1595,14 +1598,21 @@ function chatPreferences() {
     !(term.name === 'product' && /\bproduct design\b/i.test(roleText)));
   const skillText = `${state.profile.skills} ${messages.join(' ')}`;
   const skills = [...new Set((skillText.match(chatSkillWords) || []).map(word => word.toLowerCase()))].slice(0, 5);
-  const yearText = reversed.find(value => /\b(?:freshm[ae]n|sophomore|first[- ]year|second[- ]year|third[- ]year|fourth[- ]year|(?:i am|i'm|as a) (?:junior|senior))\b/i.test(value)) || '';
-  const years = schoolYears.filter(year => new RegExp(`\\b${year}\\b`, 'i').test(yearText));
+  const yearText = reversed.find(value => /\b(?:freshm[ae]n|sophomore|first[- ]year|second[- ]year|third[- ]year|fourth[- ]year|(?:i am|i'm|as a) (?:junior|senior)|graduate student|master'?s? (?:student|program|degree)|mba student|doctoral student|graduat(?:e|ing|ion).{0,35}20\d{2})\b|\bph\.?\s*d\.?(?=\W|$)/i.test(value)) || '';
+  const years = schoolYears.slice(0, 4).filter(year => new RegExp(`\\b${year}\\b`, 'i').test(yearText));
   if (/\bfreshmen\b/i.test(yearText)) years.push('freshman');
   if (/\bsophomores\b/i.test(yearText)) years.push('sophomore');
   if (/\bfirst[- ]year\b/i.test(yearText)) years.push('freshman');
   if (/\bsecond[- ]year\b/i.test(yearText)) years.push('sophomore');
   if (/\bthird[- ]year\b/i.test(yearText)) years.push('junior');
   if (/\bfourth[- ]year\b/i.test(yearText)) years.push('senior');
+  if (/\bgraduate student\b|\bmaster'?s? (?:student|program|degree)\b|\bmba student\b/i.test(yearText)) years.push('graduate');
+  if (/\bph\.?d\.?(?=\W|$)|\bdoctoral student\b/i.test(yearText)) years.push('phd');
+  const graduation = yearText.match(/\bgraduat(?:e|ing|ion)\b.{0,35}?\b(20\d{2})\b/i);
+  if (graduation && !years.includes('graduate') && !years.includes('phd')) {
+    const stage = DirectionMatcher.stageFromGraduationYear(graduation[1]);
+    if (stage) years.push(stage);
+  }
   const places = chatPlaceNames();
   const location = reversed.map(value => locationFromChat(value, places, true)).find(Boolean) ||
     locationFromChat(state.profile.location, places);
@@ -1631,7 +1641,7 @@ function directionMatches(profile = state.profile, direction = state.direction) 
   if (signature === state.directionMatchKey) return state.directionMatchResults;
   const place = profile.location.trim() ? locationFromChat(profile.location, chatPlaceNames()) : null;
   const matches = DirectionMatcher.matchJobs(state.jobs, profile, direction, {
-    categoryTerms, isSenior, outsideUndergraduateYear,
+    categoryTerms, isSenior,
     matchesLocation: job => place ? chatLocationMatches(job, place) : null
   });
   state.directionMatchKey = signature;
@@ -1719,7 +1729,6 @@ function conversationJobMatches() {
   const specificity = Number(!!type) + Number(!!categories.length) + Number(!!skills.length) +
     Number(!!location && !location.anywhere) + Number(!!years.length);
   const eligible = job => (!type || job.job_type === type) &&
-    (type !== 'Internship' || !outsideUndergraduateYear(job)) &&
     (!years.length || job.job_type !== 'Internship' || years.some(year => internshipMatchesYear(job, year))) &&
     !isSenior(job);
   let pool = state.jobs.filter(job => eligible(job) && chatLocationMatches(job, location));
@@ -1904,8 +1913,9 @@ function renderChatMatches() {
     item.append(top, makeElement('h3', '', job.title),
       makeElement('p', 'chat-match-location', `${job.location || 'Location not listed'}${job.workplace === 'Remote' ? ' · Remote' : ''}`));
     item.append(makeElement('p', 'chat-match-reason', chatMatchReason(job, preference)));
-    if (preference.years.length && job.job_type === 'Internship' && !(job.class_years || []).length)
-      item.append(makeElement('span', 'chat-match-year', 'Student year not stated'));
+    if (preference.years.length && job.job_type === 'Internship' &&
+        !preference.years.some(year => DirectionMatcher.statedStudentFit(job, year)))
+      item.append(makeElement('span', 'chat-match-year', 'Student stage not confirmed'));
     const link = makeElement('a', 'chat-match-link', 'View job posting ↗');
     link.href = job.url;
     link.target = '_blank';
@@ -1941,12 +1951,6 @@ const jobTypes = [
 ];
 const namedJobTypes = new Set(jobTypes.slice(1, -1).map(type => type.value));
 function jobTypeCategory(job) { return namedJobTypes.has(job.job_type) ? job.job_type : 'Other'; }
-function outsideUndergraduateYear(job) {
-  if (job.job_type !== 'Internship') return false;
-  if (/\bhigh[- ]school\b|\bgraduate intern\b/i.test(job.title)) return true;
-  return /\bph\.?d\.?(?=\W|$)|\bdoctoral\b|\bmba\b|\bmaster'?s\b/i.test(job.title) &&
-    !/\bundergraduate\b|\bbachelor'?s\b/i.test(job.title);
-}
 function locationHasPhrase(location, phrase) {
   const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ').trim();
@@ -2009,8 +2013,7 @@ function meetsSalaryExpectation(job, expectation) {
   return comparablePay(job, expectation) && job.pay.max >= expectation.amount;
 }
 function internshipMatchesYear(job, year) {
-  return !outsideUndergraduateYear(job) &&
-    (!(job.class_years || []).length || job.class_years.includes(year));
+  return DirectionMatcher.internshipMatchesYear(job, year);
 }
 function filteredJobs(pool) {
   const type = $('#job-type').value;
@@ -2022,7 +2025,7 @@ function filteredJobs(pool) {
   const suggested = new Set(state.directionBrowseActive ? directionScores.keys() : suggestedJobs().map(job => job.id));
   return pool.filter(job => (!type || jobTypeCategory(job) === type) &&
     (!year || internshipMatchesYear(job, year)))
-    .sort((a, b) => (year ? Number((b.class_years || []).includes(year)) - Number((a.class_years || []).includes(year)) : 0) ||
+    .sort((a, b) => (year ? Number(DirectionMatcher.statedStudentFit(b, year)) - Number(DirectionMatcher.statedStudentFit(a, year)) : 0) ||
     Number(suggested.has(b.id)) - Number(suggested.has(a.id)) ||
     (directionScores.get(b.id) || 0) - (directionScores.get(a.id) || 0) ||
     ((resumeMatchFor(b.id)?.score || state.aiMatches.get(b.id)?.score || 0) -
@@ -2052,25 +2055,26 @@ function renderJobCategories(pool) {
     container.append(button);
   }
 }
-const schoolYears = ['freshman', 'sophomore', 'junior', 'senior'];
+const schoolYears = ['freshman', 'sophomore', 'junior', 'senior', 'graduate', 'phd'];
+const studentStageLabels = { freshman: 'Freshman', sophomore: 'Sophomore', junior: 'Junior',
+  senior: 'Senior', graduate: 'Graduate / Master’s', phd: 'PhD' };
 function renderInternshipYears(pool) {
   const visible = $('#job-type').value === 'Internship';
   $('#internship-years').hidden = !visible;
   $('#discover-view').classList.toggle('year-filter-active', visible);
   if (!visible) return;
   const internships = pool.filter(job => jobTypeCategory(job) === 'Internship');
-  const otherLevel = internships.filter(outsideUndergraduateYear).length;
-  const unknown = internships.filter(job => !outsideUndergraduateYear(job) && !(job.class_years || []).length).length;
   const container = $('#year-categories');
   container.replaceChildren();
   for (const year of ['', ...schoolYears]) {
     const count = year ? internships.filter(job => internshipMatchesYear(job, year)).length : internships.length;
-    const explicit = year ? internships.filter(job => (job.class_years || []).includes(year) && !outsideUndergraduateYear(job)).length : 0;
+    const explicit = year ? internships.filter(job => internshipMatchesYear(job, year) &&
+      DirectionMatcher.statedStudentFit(job, year)).length : 0;
     const button = makeElement('button', 'job-category-button');
     button.type = 'button';
     button.setAttribute('aria-pressed', String(state.internshipYear === year));
-    if (year) button.title = `${explicit} mention ${year}; ${unknown} do not state a year. Check the posting for eligibility.`;
-    button.append(makeElement('span', '', year ? year[0].toUpperCase() + year.slice(1) : 'All years'),
+    if (year) button.title = `${explicit} have a stated requirement aligning with ${studentStageLabels[year]}; ${count - explicit} need eligibility checked in the posting.`;
+    button.append(makeElement('span', '', year ? studentStageLabels[year] : 'All stages'),
       makeElement('strong', '', String(count)));
     button.addEventListener('click', () => {
       state.internshipYear = year;
@@ -2079,7 +2083,15 @@ function renderInternshipYears(pool) {
     });
     container.append(button);
   }
-  $('#year-guidance').textContent = `${unknown ? `${unknown} internship${unknown === 1 ? '' : 's'} do not state a student year and appear in every undergraduate-year tab.` : 'No internships in this selection leave the student year unstated.'} A tab match does not confirm eligibility; check the original posting.${state.internshipYear && otherLevel ? ` ${otherLevel} high-school or advanced-degree title${otherLevel === 1 ? ' is' : 's are'} excluded here.` : ''}`;
+  const seniorClass = DirectionMatcher.academicSeniorGraduationYear();
+  const chosen = state.internshipYear;
+  const mapping = ['graduate', 'phd'].includes(chosen) ? '' :
+    `Typical graduation years now: ${seniorClass} Senior · ${seniorClass + 1} Junior · ${seniorClass + 2} Sophomore · ${seniorClass + 3} Freshman. `;
+  const uncertain = chosen ? internships.filter(job => internshipMatchesYear(job, chosen) &&
+    !DirectionMatcher.statedStudentFit(job, chosen)).length : 0;
+  $('#year-guidance').textContent = `${mapping}${chosen ?
+    `${uncertain} matching ${uncertain === 1 ? 'posting does' : 'postings do'} not state a specific ${chosen === 'graduate' || chosen === 'phd' ? 'degree level' : 'class year or graduation window'}. ` :
+    'Choose a stage to narrow internships. '}Check each employer posting before applying.`;
 }
 function renderJobs() {
   updateExternalSearchLinks();
@@ -2118,17 +2130,17 @@ function renderJobs() {
     state.aiMatchStatus === 'empty' ? `${suggestedCount} keyword suggestions · no strong AI matches` :
     `${suggestedCount} keyword suggestions`;
   const year = $('#job-type').value === 'Internship' ? state.internshipYear : '';
-  const yearMatchCount = year ? result.filter(job => (job.class_years || []).includes(year)).length : 0;
+  const yearMatchCount = year ? result.filter(job => DirectionMatcher.statedStudentFit(job, year)).length : 0;
   const yearLabels = year ? {
-    first: `Posting mentions ${year} · ${yearMatchCount}`,
-    second: `Student year not stated · ${result.length - yearMatchCount}`
+    first: `Stated eligibility aligns · ${yearMatchCount}`,
+    second: `Stage needs checking · ${result.length - yearMatchCount}`
   } : null;
   if (!visible.some(job => job.id === state.expandedDiscover)) state.expandedDiscover = null;
   renderJobSet($('#job-cards'), visible, result.length, 'discover', state.jobError || (state.jobs.length ?
     'No matches here. Try another keyword or clear the filters.' : 'No verified jobs are available right now.'),
     year ? yearMatchCount : suggestedCount, yearLabels);
   $('#results-count').textContent = year ?
-    `Showing ${visible.length} of ${result.length} internships · ${yearMatchCount} mention ${year} · ${result.length - yearMatchCount} do not state a year` :
+    `Showing ${visible.length} of ${result.length} internships · ${yearMatchCount} align with stated ${studentStageLabels[year]} requirements · ${result.length - yearMatchCount} need checking` :
     state.directionBrowseActive ? `Showing ${visible.length} of ${result.length} direction matches · ${state.jobs.length} public jobs checked` :
     state.chatBrowseActive ? `Showing ${visible.length} of ${result.length} ${state.chatBrowseSource === 'resume' ? 'resume' : 'chat'} matches · ${state.jobs.length} public jobs checked` :
       `Showing ${visible.length} of ${result.length} matching · ${suggestionText} · ${state.jobs.length} public jobs`;
@@ -2139,7 +2151,7 @@ function renderJobs() {
   $('#source-status').textContent = state.jobError || (state.checkedAt ?
     `${live} checked now${recent ? ` · ${recent} recently checked` : ''}${cached ? ` · ${cached} cached after error` : ''}${unavailable ? ` · ${unavailable} unavailable` : ''} · ${formatTime(state.checkedAt)}` : 'Connecting to job sources…');
   $('#source-status').title = state.sources.map(source => `${source.name} (${source.provider}): ${source.status}${source.checked_at ? ` · ${formatTime(source.checked_at)}` : ''}`).join(' · ');
-  const activeFilters = [$('#job-type').value, $('#job-location-filter').value, $('#job-workplace').value, salary,
+  const activeFilters = [$('#job-type').value, state.internshipYear, $('#job-location-filter').value, $('#job-workplace').value, salary,
     $('#early-filter').checked, $('#job-sort').value !== 'relevance'].filter(Boolean).length;
   $('#filter-count').textContent = activeFilters ? String(activeFilters) : '';
 }
@@ -2296,8 +2308,8 @@ function renderExpandedJob(section, job) {
     detailLine('Source', job.source));
   section.append(grid);
   if (job.job_type === 'Internship') {
-    section.append(detailLine('Student-year wording', job.year_evidence || 'Not stated in the source text; check the full posting.'));
-    section.append(makeElement('p', 'job-detail-note', 'A mentioned year is not a complete eligibility check. Confirm requirements with the employer.'));
+    section.append(detailLine('Student eligibility wording', job.year_evidence || 'Not stated in the source text; check the full posting.'));
+    section.append(makeElement('p', 'job-detail-note', 'Graduation years are mapped to a typical academic year. Confirm degree, date, and all other requirements with the employer.'));
   }
   if (job.updated_at && job.updated_at !== job.posted_at) section.append(detailLine('Listing updated', formatDate(job.updated_at)));
   if (detail?.compensation || job.pay?.display) section.append(detailLine('Published pay', detail?.compensation || job.pay.display));

@@ -23,13 +23,58 @@ const DirectionMatcher = (() => {
     .map(part => part.trim()).filter(part => part.length >= 2 && part.length <= 50))].slice(0, 8);
   const comparablePay = (job, direction) => job.pay?.currency === 'USD' &&
     job.pay.period === direction.salary_period && Number.isFinite(job.pay.max) && job.pay.max > 0;
+  const undergraduateYears = ['freshman', 'sophomore', 'junior', 'senior'];
+
+  function academicSeniorGraduationYear(today = new Date()) {
+    return today.getFullYear() + (today.getMonth() >= 7 ? 1 : 0);
+  }
+
+  function stageFromGraduationYear(year, today = new Date()) {
+    const offset = Number(year) - academicSeniorGraduationYear(today);
+    return offset >= 0 && offset < undergraduateYears.length ? undergraduateYears[3 - offset] : '';
+  }
+
+  function statedDegreeLevels(job) {
+    if ((job.degree_levels || []).length) return job.degree_levels;
+    // Older saved cards may predate the server's degree-level field.
+    const title = String(job.title || '').replace(/’/g, "'");
+    const levels = [];
+    if (/\bhigh[- ]school\b/i.test(title)) levels.push('highschool');
+    if (/\bundergrad(?:uate)?\b|\bbachelor(?:'s|s)?\b/i.test(title) || (job.class_years || []).length)
+      levels.push('undergraduate');
+    if (/\bmaster(?:'s|s)\b|\bmaster\s+(?:degree|student|program)\b|\bmba\b/i.test(title)) levels.push('graduate');
+    if (/\bph\.?\s*d\.?(?=\W|$)|\bdoctor(?:al|ate)\b/i.test(title)) levels.push('phd');
+    if (/\bgraduate\s+(?:intern|student)\b/i.test(title) && !levels.includes('graduate') && !levels.includes('phd'))
+      levels.push('graduate', 'phd');
+    return levels;
+  }
+
+  function internshipMatchesYear(job, year) {
+    if (job.job_type !== 'Internship') return false;
+    if (!year) return true;
+    const levels = statedDegreeLevels(job);
+    const classYears = job.class_years || [];
+    if (undergraduateYears.includes(year)) {
+      return !levels.includes('highschool') && (!levels.length || levels.includes('undergraduate')) &&
+        (!classYears.length || classYears.includes(year));
+    }
+    if (year === 'graduate' || year === 'phd') {
+      return !levels.includes('highschool') &&
+        (levels.length ? levels.includes(year) : !classYears.length);
+    }
+    return false;
+  }
+
+  function statedStudentFit(job, year) {
+    return undergraduateYears.includes(year) ? (job.class_years || []).includes(year) :
+      statedDegreeLevels(job).includes(year);
+  }
 
   function evaluate(job, profile, direction, helpers) {
-    const { categoryTerms, matchesLocation, isSenior, outsideUndergraduateYear } = helpers;
+    const { categoryTerms, matchesLocation, isSenior } = helpers;
     if (direction.job_type && job.job_type !== direction.job_type) return null;
     if (direction.school_year) {
-      if (job.job_type !== 'Internship' || outsideUndergraduateYear(job)) return null;
-      if ((job.class_years || []).length && !job.class_years.includes(direction.school_year)) return null;
+      if (!internshipMatchesYear(job, direction.school_year)) return null;
     }
     const seniorSeeking = /\bsenior\b|\bsr\.?\b|\bstaff\b|\blead\b|\bmanager\b/i.test(profile.role || '');
     if (!seniorSeeking && isSenior(job)) return null;
@@ -92,9 +137,9 @@ const DirectionMatcher = (() => {
     else if (priorities.length) cautions.push('Your priorities are not verified in the short preview');
     if (direction.job_type) { reasons.push(`${direction.job_type} listing`); score += 8; }
     if (direction.school_year) {
-      if ((job.class_years || []).includes(direction.school_year)) {
-        reasons.push(`${direction.school_year} explicitly mentioned`); score += 8;
-      } else cautions.push('Student year is not stated');
+      if (statedStudentFit(job, direction.school_year)) {
+        reasons.push(`stated student requirement aligns with ${direction.school_year}`); score += 8;
+      } else cautions.push('Specific student-stage eligibility is not stated');
     }
     if (direction.workplace) {
       if (job.workplace === direction.workplace) { reasons.push(`${direction.workplace} work setup`); score += 7; }
@@ -123,6 +168,7 @@ const DirectionMatcher = (() => {
         (Date.parse(b.job.posted_at || '') || 0) - (Date.parse(a.job.posted_at || '') || 0) ||
         a.job.title.localeCompare(b.job.title));
   }
-  return { evaluate, matchJobs };
+  return { evaluate, matchJobs, academicSeniorGraduationYear, stageFromGraduationYear,
+    internshipMatchesYear, statedStudentFit };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = DirectionMatcher;

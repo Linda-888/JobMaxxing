@@ -41,11 +41,37 @@ function matches(selectedProfile = profile, selectedDirection = direction, locat
 test('specific direction excludes known conflicts but retains and flags unknown details', () => {
   const result = matches();
   assert.deepEqual(result.map(match => match.job.id), ['a', 'b']);
-  assert.match(result[0].reasons.join(' '), /sophomore explicitly mentioned/);
+  assert.match(result[0].reasons.join(' '), /requirement aligns with sophomore/);
   assert.match(result[0].reasons.join(' '), /Python mentioned/);
-  assert.match(result[1].cautions.join(' '), /Student year is not stated/);
+  assert.match(result[1].cautions.join(' '), /student-stage eligibility is not stated/);
   assert.match(result[1].cautions.join(' '), /Work setup is not stated/);
   assert.match(result[1].cautions.join(' '), /Comparable USD\/hour pay is not listed/);
+});
+
+test('graduation-year stages and graduate/PhD levels exclude known conflicts', () => {
+  const today = new Date(2026, 10, 6);
+  assert.equal(matcher.stageFromGraduationYear(2027, today), 'senior');
+  assert.equal(matcher.stageFromGraduationYear(2028, today), 'junior');
+  assert.equal(matcher.stageFromGraduationYear(2029, today), 'sophomore');
+  assert.equal(matcher.stageFromGraduationYear(2030, today), 'freshman');
+  assert.equal(matcher.stageFromGraduationYear(2027, new Date(2027, 3, 1)), 'senior');
+
+  const base = { ...jobs[0], title: 'Engineering Intern', class_years: [], degree_levels: [] };
+  const senior = { ...base, id: 'senior', class_years: ['senior'], degree_levels: ['undergraduate'] };
+  const masters = { ...base, id: 'masters', degree_levels: ['graduate'] };
+  const doctoral = { ...base, id: 'doctoral', degree_levels: ['phd'] };
+  const generic = { ...base, id: 'generic' };
+  const highSchool = { ...base, id: 'high-school', title: 'High School Engineering Intern',
+    degree_levels: ['highschool'] };
+  const sample = [senior, masters, doctoral, generic, highSchool];
+  const visible = stage => sample.filter(job => matcher.internshipMatchesYear(job, stage)).map(job => job.id);
+  assert.deepEqual(visible('senior'), ['senior', 'generic']);
+  assert.deepEqual(visible('junior'), ['generic']);
+  assert.deepEqual(visible('graduate'), ['masters', 'generic']);
+  assert.deepEqual(visible('phd'), ['doctoral', 'generic']);
+  assert.equal(matcher.statedStudentFit(senior, 'senior'), true);
+  assert.equal(matcher.statedStudentFit(generic, 'senior'), false);
+  assert.equal(matcher.internshipMatchesYear({ ...base, title: 'PhD Engineering Intern' }, 'senior'), false);
 });
 
 test('activities work before a user knows a job title', () => {

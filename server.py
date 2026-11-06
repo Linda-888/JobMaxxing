@@ -21,7 +21,7 @@ import tempfile
 import time
 import zipfile
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from html import unescape
 from html.parser import HTMLParser
 from http import HTTPStatus
@@ -47,7 +47,7 @@ PROFILE_KEYS = ("role", "skills", "location", "priorities")
 EMPTY_PROFILE = {key: "" for key in PROFILE_KEYS}
 DIRECTION_ACTIVITIES = ("build", "design", "research", "analyze", "teach", "grow", "organize")
 DIRECTION_TYPES = ("", "Internship", "Full-time", "Part-time", "Fellowship", "Contract")
-DIRECTION_YEARS = ("", "freshman", "sophomore", "junior", "senior")
+DIRECTION_YEARS = ("", "freshman", "sophomore", "junior", "senior", "graduate", "phd")
 DIRECTION_WORKPLACES = ("", "Remote", "Hybrid", "On-site")
 DIRECTION_LOCATION_RULES = ("prefer", "only", "any")
 EMPTY_DIRECTION = {"activities": [], "job_type": "", "school_year": "", "workplace": "",
@@ -264,6 +264,8 @@ def safe_guest_snapshot(value):
     result["early_career"] = value.get("early_career") is True
     result["class_years"] = [year for year in (value.get("class_years") or [])
                              if year in ("freshman", "sophomore", "junior", "senior")][:4]
+    result["degree_levels"] = [level for level in (value.get("degree_levels") or [])
+                               if level in ("undergraduate", "graduate", "phd", "highschool")][:4]
     return result
 
 
@@ -545,16 +547,106 @@ def job_eligibility(value, is_html=False):
 
 YEAR_WORD = r"(?:freshm[ae]n|sophomore|junior|senior)s?"
 YEAR_LABELS = ("freshman", "sophomore", "junior", "senior")
+DEGREE_LABELS = ("undergraduate", "graduate", "phd", "highschool")
+GRADUATION_CUE = re.compile(
+    r"\b(?:graduation|graduating|graduat(?:e|es|ed)\s+(?:in|by|between|from|during|with)|"
+    r"class of|degree completion)\b", re.I)
 
 
-def internship_class_years(value, is_html=False):
-    """Return only undergraduate years explicitly described in employer text."""
+def stated_degree_levels(text):
+    """Read degree requirements, keeping a generic graduate invitation open to PhDs."""
+    text = str(text or "").replace("’", "'")
+    levels = set()
+    if re.search(r"\bhigh[- ]school\b", text, re.I):
+        levels.add("highschool")
+    if re.search(r"\bundergrad(?:uate)?s?\b|\bbachelor(?:'s|s)?\b", text, re.I):
+        levels.add("undergraduate")
+    masters = bool(re.search(r"\bmaster(?:'s|s)\b|\bmaster\s+(?:degree|student|program)\b|"
+                             r"\bmba\b|\bm\.?s\.?(?:\s+(?:degree|student|program))\b", text, re.I))
+    doctoral = bool(re.search(r"\bph\.?\s*d\.?(?=\W|$)|\bdoctor(?:al|ate)\b", text, re.I))
+    if masters:
+        levels.add("graduate")
+    if doctoral:
+        levels.add("phd")
+    generic_graduate = re.search(r"\b(?:graduate|postgraduate)\s+(?:students?|degrees?|programs?|internships?|interns?)\b", text, re.I)
+    if generic_graduate and not masters and not doctoral:
+        levels.update(("graduate", "phd"))
+    return levels
+
+
+def graduation_years_in_line(line, as_of=None):
+    """Ignore internship-season years unless the wording actually says graduation."""
+    cue = GRADUATION_CUE.search(line)
+    if not cue:
+        return []
+    context = line[cue.start():cue.start() + 160]
+    matches = list(re.finditer(r"\b20\d{2}\b", context))
+    years = set()
+    for match in matches:
+        year = int(match.group())
+        if 2020 <= year <= 2040:
+            years.add(year)
+    for left, right in zip(matches, matches[1:]):
+        first, last = int(left.group()), int(right.group())
+        between = context[left.end():right.start()]
+        is_range = re.search(r"[-–—]|\b(?:to|through)\b", between, re.I) or \
+            (re.search(r"\band\b", between, re.I) and
+             re.search(r"\bbetween\b", context[max(0, left.start() - 20):left.start()], re.I))
+        if first < last <= first + 4 and is_range:
+            years.update(range(first, last + 1))
+    today = as_of or datetime.now(timezone.utc).date()
+    senior_class = today.year + (today.month >= 8)
+    for match in matches:
+        year = int(match.group())
+        before = context[max(0, match.start() - 35):match.start()]
+        after = context[match.end():match.end() + 25]
+        if re.search(r"\b(?:or later|or after|and beyond)\b", after, re.I) or \
+                re.search(r"\b(?:on or after|no earlier than|not before)\b", before, re.I):
+            years.update(range(year, max(year, senior_class + 3) + 1))
+        elif re.search(r"\b(?:or earlier|or before)\b", after, re.I) or \
+                re.search(r"\b(?:on or before|no later than)\b", before, re.I):
+            years.update(range(min(year, senior_class), year + 1))
+    return sorted(years)
+
+
+def undergraduate_year_for_graduation(graduation_year, as_of, wording=""):
+    """The current academic year's seniors normally graduate next spring."""
+    senior_class = as_of.year + (as_of.month >= 8)
+    if as_of.month >= 8 and graduation_year == as_of.year and re.search(r"\b(?:fall|autumn|december|dec)\b", wording, re.I):
+        return "senior"
+    offset = graduation_year - senior_class
+    return YEAR_LABELS[3 - offset] if 0 <= offset <= 3 else None
+
+
+def internship_student_eligibility(value, is_html=False, title="", as_of=None):
+    """Return stated undergraduate years, degree levels, and the employer wording.
+
+    Year-only graduation requirements are treated as undergraduate unless the
+    posting names a degree level. Unspecified eligibility stays unspecified.
+    """
     description, _ = posting_text(value, is_html)
-    years, evidence = set(), ""
-    for line in re.split(r"[\n.;]+", description):
-        line = re.sub(r"\s+", " ", line).strip()
-        if not line or re.search(r"\b(?:ph\.?d\.?|doctoral|postgraduate|graduate student)\b", line, re.I):
+    today = as_of or datetime.now(timezone.utc).date()
+    title_levels = stated_degree_levels(title)
+    levels, years = set(title_levels), set()
+    title_evidence = title.strip() if title_levels else ""
+    level_evidence = ""
+    direct_evidence = graduation_evidence = ""
+    graduation_windows = []
+    for raw_line in re.split(r"[\n;]+|(?<=[.!?])\s+(?=[A-Z][a-z])", description):
+        line = re.sub(r"\s+", " ", raw_line).strip()
+        if not line:
             continue
+        if re.search(r"\b(?:preferred|nice to have|a plus|bonus)\b", line, re.I) and not \
+                re.search(r"\b(?:required|must|only)\b", line, re.I):
+            continue
+        line_levels = stated_degree_levels(line)
+        requirement = re.search(r"\b(?:pursuing|enrolled|enrollment|applicants?|candidates?|eligible|"
+                                r"requirements?|qualifications?|degree|required|must|only|graduat\w*)\b", line, re.I) or \
+            re.search(r"\bstudents?\b.{0,35}\b(?:may apply|are welcome|eligible|must|required|only)\b", line, re.I)
+        if line_levels and requirement:
+            levels.update(line_levels)
+            if not level_evidence:
+                level_evidence = line
         patterns = (
             rf"\b(?:rising|incoming|current|entering|undergraduate|college|university)\b.{{0,35}}\b{YEAR_WORD}\b",
             rf"\b{YEAR_WORD}\b.{{0,35}}\b(?:undergraduate|college|university|student|standing|bachelor|degree)\b",
@@ -562,15 +654,44 @@ def internship_class_years(value, is_html=False):
         )
         for pattern in patterns:
             for match in re.finditer(pattern, line, re.I):
-                phrase = line[max(0, match.start() - 5):min(len(line), match.end() + 30)]
+                phrase = line[max(0, match.start() - 8):min(len(line), match.end() + 28)]
+                if "phd" in stated_degree_levels(phrase) and "undergraduate" not in stated_degree_levels(phrase):
+                    continue
+                if title_levels and "undergraduate" not in title_levels and "undergraduate" not in line_levels:
+                    continue
                 for word in re.findall(rf"\b{YEAR_WORD}\b", phrase, re.I):
                     years.add("freshman" if word.lower().startswith("freshm") else word.lower().rstrip("s"))
                 ordinal = re.search(r"\b(first|second|third|fourth)[ -]year\b", phrase, re.I)
                 if ordinal:
                     years.add({"first": "freshman", "second": "sophomore", "third": "junior", "fourth": "senior"}[ordinal.group(1).lower()])
-                if not evidence:
-                    evidence = line[:220] + ("…" if len(line) > 220 else "")
-    return [year for year in YEAR_LABELS if year in years], evidence
+                levels.add("undergraduate")
+                if not direct_evidence:
+                    direct_evidence = line
+        graduation_years = graduation_years_in_line(line, today)
+        if graduation_years:
+            graduation_windows.append((graduation_years, line, line_levels))
+            if not graduation_evidence:
+                graduation_evidence = line
+    for graduation_years, wording, line_levels in graduation_windows:
+        applicable_levels = line_levels or levels
+        if not applicable_levels:
+            levels.add("undergraduate")
+            applicable_levels = levels
+        if "undergraduate" in applicable_levels:
+            for graduation_year in graduation_years:
+                school_year = undergraduate_year_for_graduation(graduation_year, today, wording)
+                if school_year:
+                    years.add(school_year)
+    evidence = graduation_evidence or direct_evidence or level_evidence or title_evidence
+    evidence = evidence[:220] + ("…" if len(evidence) > 220 else "")
+    return ([year for year in YEAR_LABELS if year in years],
+            [level for level in DEGREE_LABELS if level in levels], evidence)
+
+
+def internship_class_years(value, is_html=False):
+    """Compatibility helper for callers checking undergraduate class years."""
+    years, _, evidence = internship_student_eligibility(value, is_html)
+    return years, evidence if years else ""
 
 
 def make_job(provider, token, company, item):
@@ -626,7 +747,8 @@ def make_job(provider, token, company, item):
                        item.get("description") if provider == "remotive" else item.get("descriptionPlain"))
     is_html = provider in ("greenhouse", "remotive")
     summary = job_summary(raw_description, is_html)
-    years, year_evidence = internship_class_years(raw_description, is_html) if job_kind(raw_kind, title) == "Internship" else ([], "")
+    years, degree_levels, year_evidence = (internship_student_eligibility(raw_description, is_html, title)
+                                           if job_kind(raw_kind, title) == "Internship" else ([], [], ""))
     eligibility_preview = year_evidence or job_eligibility(raw_description, is_html)
     return {"id": f"{token if provider == 'greenhouse' else provider + '-' + token}:{job_id}",
             "company": str(company).strip(), "source": provider.title(), "title": title.strip(),
@@ -634,7 +756,7 @@ def make_job(provider, token, company, item):
             "job_type": job_kind(raw_kind, title), "early_career": early_career(title),
             "workplace": workplace, "posted_at": posted_at, "updated_at": updated_at,
             "summary": summary, "eligibility_preview": eligibility_preview,
-            "class_years": years, "year_evidence": year_evidence,
+            "class_years": years, "degree_levels": degree_levels, "year_evidence": year_evidence,
             "pay": listing_pay(provider, item), "url": url}
 
 
@@ -1426,6 +1548,11 @@ def recommend_jobs_from_resume(resume_text):
     student_focus = bool(resume_words.intersection({"student", "students", "undergraduate", "undergrad",
                                                    "freshman", "sophomore", "junior", "senior",
                                                    "intern", "internship", "internships"}))
+    phd_applicant = bool(re.search(
+        r"\bph\.?\s*d\.?(?=\W|$)\s*(?:student|candidate|degree|program|in\b)|"
+        r"\bdoctoral\s+(?:student|candidate|degree|program)\b|"
+        r"\b(?:pursuing|earned|completed)\s+(?:a\s+)?(?:ph\.?\s*d\.?|doctorate)\b",
+        resume_text, re.I))
     candidates = []
     for job in feed["jobs"]:
         if preferences["job_type"] and job.get("job_type") != preferences["job_type"]:
@@ -1435,8 +1562,8 @@ def recommend_jobs_from_resume(resume_text):
         if not resume_location_matches(job, preferences["location"]):
             continue
         title_words = normalize_resume_term(job.get("title", "")).split()
-        if {"phd", "doctoral", "postdoctoral", "postdoc"}.intersection(title_words) or \
-                ("ph" in title_words and "d" in title_words):
+        if ({"phd", "doctoral", "postdoctoral", "postdoc"}.intersection(title_words) or
+                ("ph" in title_words and "d" in title_words)) and not phd_applicant:
             continue
         is_internship = job.get("job_type") == "Internship" or "intern" in title_words or "internship" in title_words
         senior_title = {"senior", "sr", "staff", "principal", "lead", "director", "manager", "head"}.intersection(title_words)

@@ -10,7 +10,7 @@ OUTPUT = Path(__file__).resolve().parent / "docs" / "jobs.json"
 FIELDS = (
     "id", "company", "source", "title", "location", "department", "job_type",
     "early_career", "workplace", "posted_at", "summary", "eligibility_preview",
-    "class_years", "pay", "url",
+    "class_years", "degree_levels", "pay", "url",
 )
 
 
